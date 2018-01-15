@@ -25,6 +25,8 @@
 	#include <TargetConditionals.h>
 #endif // ifdef __APPLE__
 
+#include "linphone/utils/utils.h"
+
 #include "abstract-db-p.h"
 #include "db/session/db-session-provider.h"
 #include "logger/logger.h"
@@ -123,6 +125,20 @@ string AbstractDb::primaryKeyRefStr (const string &type) const {
 	return "";
 }
 
+string AbstractDb::varcharPrimaryKeyStr (int length) const {
+	L_D();
+
+	switch (d->backend) {
+		case Mysql:
+			return " VARCHAR(" + Utils::toString(length) + ") PRIMARY KEY";
+		case Sqlite3:
+			return " VARCHAR(" + Utils::toString(length) + ") PRIMARY KEY";
+	}
+
+	L_ASSERT(false);
+	return "";
+}
+
 string AbstractDb::timestampType () const {
 	L_D();
 
@@ -165,9 +181,6 @@ long long AbstractDb::getLastInsertId () const {
 			case Sqlite3:
 				sql = "SELECT last_insert_rowid()";
 				break;
-			default:
-				lWarning() << "Unsupported backend.";
-				return -1;
 		}
 
 		soci::session *session = d->dbSession.getBackendSession<soci::session>();
@@ -190,6 +203,24 @@ void AbstractDb::enableForeignKeys (bool status) {
 				break;
 		}
 	#endif // ifdef SOCI_ENABLED
+}
+
+bool AbstractDb::checkTableExists (const string &table) const {
+	#ifdef SOCI_ENABLED
+		L_D();
+		soci::session *session = d->dbSession.getBackendSession<soci::session>();
+		switch (d->backend) {
+			case Mysql:
+				*session << "SHOW TABLES LIKE :table", soci::use(table);
+				return session->got_data() > 0;
+			case Sqlite3:
+				*session << "SELECT name FROM sqlite_master WHERE type='table' AND name=:table", soci::use(table);
+				return session->got_data() > 0;
+		}
+	#endif // ifdef SOCI_ENABLED
+
+	L_ASSERT(false);
+	return false;
 }
 
 LINPHONE_END_NAMESPACE

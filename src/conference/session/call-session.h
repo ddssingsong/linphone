@@ -17,14 +17,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CALL_SESSION_H_
-#define _CALL_SESSION_H_
+#ifndef _L_CALL_SESSION_H_
+#define _L_CALL_SESSION_H_
 
 #include "object/object.h"
 #include "address/address.h"
 #include "conference/conference.h"
 #include "conference/params/call-session-params.h"
-#include "conference/session/call-session-listener.h"
 #include "core/core-listener.h"
 #include "sal/call-op.h"
 
@@ -44,11 +43,15 @@ class LINPHONE_PUBLIC CallSession : public Object, public CoreAccessor {
 	friend class ClientGroupChatRoomPrivate;
 	friend class Conference;
 	friend class CorePrivate;
+	friend class LocalConferenceCall;
+	friend class RemoteConferenceCall;
 	friend class ServerGroupChatRoom;
 	friend class ServerGroupChatRoomPrivate;
 
 public:
 	L_OVERRIDE_SHARED_FROM_THIS(CallSession);
+
+	L_DECLARE_ENUM(State, L_ENUM_VALUES_CALL_SESSION_STATE);
 
 	CallSession (const std::shared_ptr<Core> &core, const CallSessionParams *params, CallSessionListener *listener);
 	virtual ~CallSession ();
@@ -90,11 +93,13 @@ public:
 	const CallSessionParams *getRemoteParams ();
 	std::string getRemoteUserAgent () const;
 	std::shared_ptr<CallSession> getReplacedCallSession () const;
-	LinphoneCallState getState () const;
+	CallSession::State getState () const;
 	const Address& getToAddress () const;
-	LinphoneCallState getTransferState () const;
+	CallSession::State getTransferState () const;
 	std::shared_ptr<CallSession> getTransferTarget () const;
 	std::string getToHeader (const std::string &name) const;
+
+	static bool isEarlyState (CallSession::State state);
 
 protected:
 	explicit CallSession (CallSessionPrivate &p, const std::shared_ptr<Core> &core);
@@ -106,4 +111,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CALL_SESSION_H_
+#endif // ifndef _L_CALL_SESSION_H_

@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _DIAL_PLAN_H_
-#define _DIAL_PLAN_H_
+#ifndef _L_DIAL_PLAN_H_
+#define _L_DIAL_PLAN_H_
 
 #include <list>
 
@@ -46,6 +46,7 @@ public:
 	const std::string &getCountry () const;
 	const std::string &getIsoCountryCode () const;
 	const std::string &getCountryCallingCode () const;
+	void setCountryCallingCode(const std::string &ccc);
 	int getNationalNumberLength () const;
 	const std::string &getInternationalCallPrefix () const;
 	bool isGeneric () const;
@@ -54,7 +55,7 @@ public:
 
 	static int lookupCccFromE164 (const std::string &e164);
 	static int lookupCccFromIso (const std::string &iso);
-	static const DialPlan &findByCccAsInt (int ccc);
+	static const DialPlan &findByCcc (int ccc);
 	static const DialPlan &findByCcc (const std::string &ccc);
 	static const std::list<DialPlan> &getAllDialPlans ();
 
@@ -64,4 +65,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _DIAL_PLAN_H_
+#endif // ifndef _L_DIAL_PLAN_H_

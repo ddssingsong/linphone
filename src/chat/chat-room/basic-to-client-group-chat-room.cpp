@@ -17,9 +17,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#include "abstract-chat-room-p.h"
 #include "basic-to-client-group-chat-room.h"
-#include "chat-room.h"
+#include "proxy-chat-room-p.h"
+#include "client-group-chat-room-p.h"
+#include "chat/chat-message/chat-message-p.h"
+#include "conference/participant.h"
+#include "conference/session/call-session.h"
+#include "core/core-p.h"
+#include "c-wrapper/c-wrapper.h"
 
 // =============================================================================
 
@@ -29,181 +34,104 @@ LINPHONE_BEGIN_NAMESPACE
 
 // -----------------------------------------------------------------------------
 
-class BasicToClientGroupChatRoomPrivate : public AbstractChatRoomPrivate {
+class BasicToClientGroupChatRoomPrivate : public ProxyChatRoomPrivate {
 public:
-	shared_ptr<AbstractChatRoom> chatRoom;
+	void onChatRoomInsertRequested (const shared_ptr<AbstractChatRoom> &chatRoom) override {
+		L_Q();
+		// Insert the client group chat room temporarily
+		q->getCore()->getPrivate()->insertChatRoom(chatRoom);
+	}
+
+	void onChatRoomInsertInDatabaseRequested (const shared_ptr<AbstractChatRoom> &chatRoom) override {
+		// Do not insert the client group chat room in database, the migration will do it
+	}
+
+	void sendChatMessage (const shared_ptr<ChatMessage> &chatMessage) override {
+		ProxyChatRoomPrivate::sendChatMessage(chatMessage);
+		const char *specs = linphone_core_get_linphone_specs(chatMessage->getCore()->getCCore());
+		time_t currentRealTime = ms_time(nullptr);
+		if (!linphone_core_get_conference_factory_uri(chatMessage->getCore()->getCCore())
+			|| (chatRoom->getCapabilities() & ChatRoom::Capabilities::Conference)
+			|| clientGroupChatRoom
+			|| !specs || !strstr(specs, "groupchat")
+			|| ((currentRealTime - migrationRealTime) <
+				linphone_config_get_int(linphone_core_get_config(chatMessage->getCore()->getCCore()),
+					"misc", "basic_to_client_group_chat_room_migration_timer", 86400) // Try migration every 24 hours
+				)
+		) {
+			return;
+		}
+		migrationRealTime = currentRealTime;
+		clientGroupChatRoom = static_pointer_cast<ClientGroupChatRoom>(
+			chatRoom->getCore()->getPrivate()->createClientGroupChatRoom(chatRoom->getSubject(), false)
+		);
+		clientGroupChatRoom->getPrivate()->setCallSessionListener(this);
+		clientGroupChatRoom->getPrivate()->setChatRoomListener(this);
+		clientGroupChatRoom->addParticipant(chatRoom->getPeerAddress(), nullptr, false);
+	}
+
+	void onCallSessionStateChanged (
+		const shared_ptr<const CallSession> &session,
+		CallSession::State newState,
+		const string &message
+	) override {
+		if (!clientGroupChatRoom)
+			return;
+		if ((newState == CallSession::State::Error) && (clientGroupChatRoom->getState() == ChatRoom::State::CreationPending)) {
+			Core::deleteChatRoom(clientGroupChatRoom);
+			if (session->getReason() == LinphoneReasonNotAcceptable) {
+				clientGroupChatRoom = nullptr;
+				return;
+			}
+		}
+		clientGroupChatRoom->getPrivate()->onCallSessionStateChanged(session, newState, message);
+	}
 
 private:
-	inline void setCreationTime (time_t creationTime) override {
-		chatRoom->getPrivate()->setCreationTime(creationTime);
-	}
+	shared_ptr<ClientGroupChatRoom> clientGroupChatRoom;
+	time_t migrationRealTime = 0;
 
-	inline void setLastUpdateTime (time_t lastUpdateTime) override {
-		chatRoom->getPrivate()->setLastUpdateTime(lastUpdateTime);
-	}
-
-	inline void setState (BasicToClientGroupChatRoom::State state) override {
-		chatRoom->getPrivate()->setState(state);
-	}
-
-	inline void sendChatMessage (const shared_ptr<ChatMessage> &chatMessage) override {
-		chatRoom->getPrivate()->sendChatMessage(chatMessage);
-	}
-
-	inline void addTransientEvent (const shared_ptr<EventLog> &eventLog) override {
-		chatRoom->getPrivate()->addTransientEvent(eventLog);
-	}
-
-	inline void removeTransientEvent (const shared_ptr<EventLog> &eventLog) override {
-		chatRoom->getPrivate()->removeTransientEvent(eventLog);
-	}
-
-	inline void notifyUndecryptableChatMessageReceived (const shared_ptr<ChatMessage> &chatMessage) override {
-		chatRoom->getPrivate()->notifyUndecryptableChatMessageReceived(chatMessage);
-	}
-
-	inline LinphoneReason onSipMessageReceived (SalOp *op, const SalMessage *message) override {
-		return chatRoom->getPrivate()->onSipMessageReceived(op, message);
-	}
-
-	inline void onChatMessageReceived (const shared_ptr<ChatMessage> &chatMessage) override {
-		chatRoom->getPrivate()->onChatMessageReceived(chatMessage);
-	}
+	L_DECLARE_PUBLIC(BasicToClientGroupChatRoom);
 };
 
 // =============================================================================
 
 BasicToClientGroupChatRoom::BasicToClientGroupChatRoom (const shared_ptr<ChatRoom> &chatRoom) :
-	AbstractChatRoom(*new BasicToClientGroupChatRoomPrivate, chatRoom->getCore()) {
+	ProxyChatRoom(*new BasicToClientGroupChatRoomPrivate, chatRoom) {}
+
+BasicToClientGroupChatRoom::CapabilitiesMask BasicToClientGroupChatRoom::getCapabilities () const {
 	L_D();
-	d->chatRoom = chatRoom;
+	CapabilitiesMask capabilities = d->chatRoom->getCapabilities();
+	capabilities.set(Capabilities::Proxy);
+	if (capabilities.isSet(Capabilities::Basic))
+		capabilities.set(Capabilities::Migratable);
+	return capabilities;
 }
-
-// -----------------------------------------------------------------------------
-
-const ChatRoomId &BasicToClientGroupChatRoom::getChatRoomId () const {
-	L_D();
-	return d->chatRoom->getChatRoomId();
-}
-
-const IdentityAddress &BasicToClientGroupChatRoom::getPeerAddress () const {
-	L_D();
-	return d->chatRoom->getPeerAddress();
-}
-
-const IdentityAddress &BasicToClientGroupChatRoom::getLocalAddress () const {
-	L_D();
-	return d->chatRoom->getLocalAddress();
-}
-
-// -----------------------------------------------------------------------------
-
-time_t BasicToClientGroupChatRoom::getCreationTime () const {
-	L_D();
-	return d->chatRoom->getCreationTime();
-}
-
-time_t BasicToClientGroupChatRoom::getLastUpdateTime () const {
-	L_D();
-	return d->chatRoom->getLastUpdateTime();
-}
-
-// -----------------------------------------------------------------------------
-
-BasicToClientGroupChatRoom::State BasicToClientGroupChatRoom::getState () const {
-	L_D();
-	return d->chatRoom->getState();
-}
-
-// -----------------------------------------------------------------------------
-
-list<shared_ptr<EventLog>> BasicToClientGroupChatRoom::getHistory (int nLast) const {
-	L_D();
-	return d->chatRoom->getHistory(nLast);
-}
-
-list<shared_ptr<EventLog>> BasicToClientGroupChatRoom::getHistoryRange (int begin, int end) const {
-	L_D();
-	return d->chatRoom->getHistoryRange(begin, end);
-}
-
-int BasicToClientGroupChatRoom::getHistorySize () const {
-	L_D();
-	return d->chatRoom->getHistorySize();
-}
-
-void BasicToClientGroupChatRoom::deleteHistory () {
-	L_D();
-	d->chatRoom->deleteHistory();
-}
-
-shared_ptr<ChatMessage> BasicToClientGroupChatRoom::getLastChatMessageInHistory () const {
-	L_D();
-	return d->chatRoom->getLastChatMessageInHistory();
-}
-
-int BasicToClientGroupChatRoom::getChatMessageCount () const {
-	L_D();
-	return d->chatRoom->getChatMessageCount();
-}
-
-int BasicToClientGroupChatRoom::getUnreadChatMessageCount () const {
-	L_D();
-	return d->chatRoom->getUnreadChatMessageCount();
-}
-
-// -----------------------------------------------------------------------------
-
-void BasicToClientGroupChatRoom::compose () {
-	L_D();
-	return d->chatRoom->compose();
-}
-
-bool BasicToClientGroupChatRoom::isRemoteComposing () const {
-	L_D();
-	return d->chatRoom->isRemoteComposing();
-}
-
-list<IdentityAddress> BasicToClientGroupChatRoom::getComposingAddresses () const {
-	L_D();
-	return d->chatRoom->getComposingAddresses();
-}
-
-// -----------------------------------------------------------------------------
 
 shared_ptr<ChatMessage> BasicToClientGroupChatRoom::createChatMessage () {
-	L_D();
-	return d->chatRoom->createChatMessage();
+	shared_ptr<ChatMessage> msg = ProxyChatRoom::createChatMessage();
+	msg->getPrivate()->setChatRoom(getSharedFromThis());
+	return msg;
 }
 
 shared_ptr<ChatMessage> BasicToClientGroupChatRoom::createChatMessage (const string &text) {
-	L_D();
-	return d->chatRoom->createChatMessage(text);
+	shared_ptr<ChatMessage> msg = ProxyChatRoom::createChatMessage(text);
+	msg->getPrivate()->setChatRoom(getSharedFromThis());
+	return msg;
 }
 
-shared_ptr<ChatMessage> BasicToClientGroupChatRoom::createFileTransferMessage (const LinphoneContent *initialContent) {
-	L_D();
-	return d->chatRoom->createFileTransferMessage(initialContent);
-}
+void BasicToClientGroupChatRoom::migrate(const std::shared_ptr<ClientGroupChatRoom> &clientGroupChatRoom, const std::shared_ptr<AbstractChatRoom> &chatRoom) {
+	clientGroupChatRoom->getCore()->getPrivate()->mainDb->migrateBasicToClientGroupChatRoom(chatRoom, clientGroupChatRoom);
 
-// -----------------------------------------------------------------------------
-
-shared_ptr<ChatMessage> BasicToClientGroupChatRoom::findChatMessage (const string &messageId) const {
-	L_D();
-	return d->chatRoom->findChatMessage(messageId);
-}
-
-shared_ptr<ChatMessage> BasicToClientGroupChatRoom::findChatMessage (
-	const string &messageId,
-	ChatMessage::Direction direction
-) const {
-	L_D();
-	return d->chatRoom->findChatMessage(messageId, direction);
-}
-
-void BasicToClientGroupChatRoom::markAsRead () {
-	L_D();
-	d->chatRoom->markAsRead();
+	if (chatRoom->getCapabilities() & ChatRoom::Capabilities::Proxy) {
+		shared_ptr<BasicToClientGroupChatRoom> btcgcr = static_pointer_cast<BasicToClientGroupChatRoom>(chatRoom);
+		btcgcr->getCore()->getPrivate()->replaceChatRoom(chatRoom, clientGroupChatRoom);
+		btcgcr->getPrivate()->chatRoom = clientGroupChatRoom;
+	} else {
+		LinphoneChatRoom *lcr = L_GET_C_BACK_PTR(chatRoom);
+		L_SET_CPP_PTR_FROM_C_OBJECT(lcr, clientGroupChatRoom);
+		clientGroupChatRoom->getCore()->getPrivate()->replaceChatRoom(chatRoom, clientGroupChatRoom);
+	}
 }
 
 LINPHONE_END_NAMESPACE

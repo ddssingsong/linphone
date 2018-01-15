@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _FILE_TRANSFER_CONTENT_H_
-#define _FILE_TRANSFER_CONTENT_H_
+#ifndef _L_FILE_TRANSFER_CONTENT_H_
+#define _L_FILE_TRANSFER_CONTENT_H_
 
 #include "content.h"
 
@@ -52,6 +52,9 @@ public:
 	void setFileContent (FileContent *content);
 	FileContent *getFileContent () const;
 
+	void setFileSize (size_t size);
+	size_t getFileSize () const;
+
 	// TODO: Remove me later.
 	LinphoneContent *toLinphoneContent () const override;
 
@@ -61,4 +64,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _FILE_TRANSFER_CONTENT_H_
+#endif // ifndef _L_FILE_TRANSFER_CONTENT_H_

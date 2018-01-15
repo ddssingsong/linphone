@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CORE_LISTENER_H_
-#define _CORE_LISTENER_H_
+#ifndef _L_CORE_LISTENER_H_
+#define _L_CORE_LISTENER_H_
 
 #include "linphone/types.h"
 
@@ -30,10 +30,10 @@ class CoreListener {
 public:
 	virtual ~CoreListener () = default;
 
-	virtual void onNetworkReachable (bool reachable) {}
+	virtual void onNetworkReachable (bool sipNetworkReachable, bool mediaNetworkReachable) {}
 	virtual void onRegistrationStateChanged (LinphoneProxyConfig *cfg, LinphoneRegistrationState state, const std::string &message) {}
 };
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CORE_LISTENER_H_
+#endif // ifndef _L_CORE_LISTENER_H_

@@ -215,8 +215,8 @@ void _linphone_call_stats_uninit(LinphoneCallStats *stats);
 void _linphone_call_stats_clone(LinphoneCallStats *dst, const LinphoneCallStats *src);
 void _linphone_call_stats_set_ice_state (LinphoneCallStats *stats, LinphoneIceState state);
 void _linphone_call_stats_set_type (LinphoneCallStats *stats, LinphoneStreamType type);
-mblk_t *_linphone_call_stats_get_received_rtcp (const LinphoneCallStats *stats);
 void _linphone_call_stats_set_received_rtcp (LinphoneCallStats *stats, mblk_t *m);
+mblk_t *_linphone_call_stats_get_sent_rtcp (const LinphoneCallStats *stats);
 void _linphone_call_stats_set_sent_rtcp (LinphoneCallStats *stats, mblk_t *m);
 int _linphone_call_stats_get_updated (const LinphoneCallStats *stats);
 void _linphone_call_stats_set_updated (LinphoneCallStats *stats, int updated);
@@ -275,7 +275,7 @@ void _linphone_proxy_config_unregister(LinphoneProxyConfig *obj);
 void _linphone_proxy_config_release_ops(LinphoneProxyConfig *obj);
 
 /*chat*/
-LinphoneChatRoom *_linphone_client_group_chat_room_new (LinphoneCore *core, const char *uri, const char *subject);
+LinphoneChatRoom *_linphone_client_group_chat_room_new (LinphoneCore *core, const char *uri, const char *subject, bool_t fallback);
 LinphoneChatRoom *_linphone_server_group_chat_room_new (LinphoneCore *core, LinphonePrivate::SalCallOp *op);
 void linphone_chat_room_set_call(LinphoneChatRoom *cr, LinphoneCall *call);
 LinphoneChatRoomCbs * linphone_chat_room_cbs_new (void);
@@ -342,7 +342,7 @@ LINPHONE_PUBLIC int linphone_core_get_call_history_size(LinphoneCore *lc);
 int linphone_core_get_edge_bw(LinphoneCore *lc);
 int linphone_core_get_edge_ptime(LinphoneCore *lc);
 
-LinphoneCore *_linphone_core_new_with_config(LinphoneCoreCbs *cbs, struct _LpConfig *config, void *userdata, void *system_context);
+LinphoneCore *_linphone_core_new_with_config(LinphoneCoreCbs *cbs, struct _LpConfig *config, void *userdata, void *system_context, bool_t automatically_start);
 
 int linphone_upnp_init(LinphoneCore *lc);
 void linphone_upnp_destroy(LinphoneCore *lc);
@@ -351,36 +351,12 @@ void linphone_upnp_destroy(LinphoneCore *lc);
 int _linphone_sqlite3_open(const char *db_file, sqlite3 **db);
 #endif
 
-void linphone_chat_message_set_time(LinphoneChatMessage* msg, time_t time);
-void linphone_chat_message_set_incoming(LinphoneChatMessage *msg);
-void linphone_chat_message_set_outgoing(LinphoneChatMessage *msg);
 LinphoneChatMessageStateChangedCb linphone_chat_message_get_message_state_changed_cb(LinphoneChatMessage* msg);
 void linphone_chat_message_set_message_state_changed_cb(LinphoneChatMessage* msg, LinphoneChatMessageStateChangedCb cb);
 void linphone_chat_message_set_message_state_changed_cb_user_data(LinphoneChatMessage* msg, void *user_data);
 void * linphone_chat_message_get_message_state_changed_cb_user_data(LinphoneChatMessage* msg);
-void linphone_chat_message_set_state(LinphoneChatMessage *msg, LinphoneChatMessageState state);
-void linphone_chat_message_set_message_id(LinphoneChatMessage *msg, char *id);
-void linphone_chat_message_set_storage_id(LinphoneChatMessage *msg, unsigned int id);
-SalCustomHeader * linphone_chat_message_get_sal_custom_headers(const LinphoneChatMessage *msg);
-void linphone_chat_message_set_sal_custom_headers(LinphoneChatMessage *msg, SalCustomHeader *header);
-belle_http_request_t * linphone_chat_message_get_http_request(const LinphoneChatMessage *msg);
-void linphone_chat_message_set_http_request(LinphoneChatMessage *msg, belle_http_request_t *request);
-void linphone_chat_message_set_file_transfer_information(LinphoneChatMessage *msg, LinphoneContent *content);
-LinphoneChatMessageDir linphone_chat_message_get_direction(const LinphoneChatMessage *msg);
-LinphonePrivate::SalOp * linphone_chat_message_get_sal_op(const LinphoneChatMessage *msg);
-void linphone_chat_message_set_sal_op(LinphoneChatMessage *msg, LinphonePrivate::SalOp *op);
-void linphone_chat_message_destroy(LinphoneChatMessage* msg);
 void linphone_chat_message_update_state(LinphoneChatMessage *msg, LinphoneChatMessageState new_state);
-void linphone_chat_message_set_is_secured(LinphoneChatMessage *msg, bool_t secured);
-void linphone_chat_message_send_delivery_notification(LinphoneChatMessage *cm, LinphoneReason reason);
-void linphone_chat_message_send_display_notification(LinphoneChatMessage *cm);
-void _linphone_chat_message_cancel_file_transfer(LinphoneChatMessage *msg, bool_t unref);
-int linphone_chat_room_upload_file(LinphoneChatMessage *msg);
 LinphoneChatRoom *_linphone_core_create_chat_room_from_call(LinphoneCall *call);
-void linphone_chat_room_remove_transient_message(LinphoneChatRoom *cr, LinphoneChatMessage *msg);
-void linphone_chat_message_deactivate(LinphoneChatMessage *msg);
-void linphone_chat_message_release(LinphoneChatMessage *msg);
-void linphone_chat_message_fetch_content_from_database(sqlite3 *db, LinphoneChatMessage *message, int content_id);
 
 void linphone_core_play_named_tone(LinphoneCore *lc, LinphoneToneID id);
 bool_t linphone_core_tone_indications_enabled(LinphoneCore*lc);
@@ -549,8 +525,6 @@ LinphoneLimeState linphone_core_lime_for_file_sharing_enabled(const LinphoneCore
 int linphone_core_get_default_proxy_config_index(LinphoneCore *lc);
 
 char *linphone_presence_model_to_xml(LinphonePresenceModel *model) ;
-
-bool_t linphone_call_state_is_early(LinphoneCallState state);
 
 void linphone_core_report_call_log(LinphoneCore *lc, LinphoneCallLog *call_log);
 void linphone_core_report_early_failed_call(LinphoneCore *lc, LinphoneCallDir dir, LinphoneAddress *from, LinphoneAddress *to, LinphoneErrorInfo *ei);

@@ -248,7 +248,7 @@ static void call_released(SalOp *op) {
 		 * when declining an incoming call with busy because maximum number of calls is reached. */
 		return;
 	}
-	L_GET_PRIVATE(session)->setState(LinphoneCallReleased, "Call released");
+	L_GET_PRIVATE(session)->setState(LinphonePrivate::CallSession::State::Released, "Call released");
 }
 
 static void call_cancel_done(SalOp *op) {
@@ -506,23 +506,21 @@ static void notify_refer(SalOp *op, SalReferStatus status) {
 		ms_warning("Receiving notify_refer for unknown CallSession");
 		return;
 	}
-	LinphoneCallState cstate;
+	LinphonePrivate::CallSession::State cstate;
 	switch (status) {
 		case SalReferTrying:
-			cstate = LinphoneCallOutgoingProgress;
+			cstate = LinphonePrivate::CallSession::State::OutgoingProgress;
 			break;
 		case SalReferSuccess:
-			cstate = LinphoneCallConnected;
+			cstate = LinphonePrivate::CallSession::State::Connected;
 			break;
 		case SalReferFailed:
-			cstate = LinphoneCallError;
-			break;
 		default:
-			cstate = LinphoneCallError;
+			cstate = LinphonePrivate::CallSession::State::Error;
 			break;
 	}
 	L_GET_PRIVATE(session)->setTransferState(cstate);
-	if (cstate == LinphoneCallConnected)
+	if (cstate == LinphonePrivate::CallSession::State::Connected)
 		session->terminate(); // Automatically terminate the call as the transfer is complete
 }
 
@@ -727,7 +725,7 @@ static void refer_received(SalOp *op, const SalAddress *refer_to){
 			} else {
 				LinphoneChatRoom *cr = L_GET_C_BACK_PTR(L_GET_CPP_PTR_FROM_C_OBJECT(lc)->findChatRoom(ChatRoomId(addr, IdentityAddress(op->get_to()))));
 				if (!cr)
-					cr = _linphone_client_group_chat_room_new(lc, addr.asString().c_str(), nullptr);
+					cr = _linphone_client_group_chat_room_new(lc, addr.asString().c_str(), nullptr, FALSE);
 				L_GET_CPP_PTR_FROM_C_OBJECT(cr)->join();
 				static_cast<SalReferOp *>(op)->reply(SalReasonNone);
 				return;

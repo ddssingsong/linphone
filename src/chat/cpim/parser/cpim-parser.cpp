@@ -17,17 +17,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
+#include <unordered_map>
+
 #include <belr/abnf.h>
 #include <belr/grammarbuilder.h>
 
 #include "linphone/utils/utils.h"
 
-#include "cpim-grammar.h"
 #include "content/content-type.h"
 #include "logger/logger.h"
 #include "object/object-p.h"
 
 #include "cpim-parser.h"
+
+#define CPIM_GRAMMAR "cpim_grammar"
 
 // =============================================================================
 
@@ -221,11 +224,9 @@ public:
 Cpim::Parser::Parser () : Singleton(*new ParserPrivate) {
 	L_D();
 
-	belr::ABNFGrammarBuilder builder;
-
-	d->grammar = builder.createFromAbnf(getGrammar(), make_shared<belr::CoreRules>());
+	d->grammar = belr::GrammarLoader::get().load(CPIM_GRAMMAR);
 	if (!d->grammar)
-		lFatal() << "Unable to build CPIM grammar.";
+		lFatal() << "Unable to load CPIM grammar.";
 }
 
 // -----------------------------------------------------------------------------
@@ -337,25 +338,25 @@ static bool coreHeaderIsValid (
 }
 
 template<>
-bool Cpim::Parser::coreHeaderIsValid<Cpim::FromHeader>(const string &headerValue) const {
+bool Cpim::Parser::coreHeaderIsValid<Cpim::FromHeader> (const string &headerValue) const {
 	L_D();
 	return LinphonePrivate::coreHeaderIsValid(d->grammar, "From", headerValue);
 }
 
 template<>
-bool Cpim::Parser::coreHeaderIsValid<Cpim::ToHeader>(const string &headerValue) const {
+bool Cpim::Parser::coreHeaderIsValid<Cpim::ToHeader> (const string &headerValue) const {
 	L_D();
 	return LinphonePrivate::coreHeaderIsValid(d->grammar, "To", headerValue);
 }
 
 template<>
-bool Cpim::Parser::coreHeaderIsValid<Cpim::CcHeader>(const string &headerValue) const {
+bool Cpim::Parser::coreHeaderIsValid<Cpim::CcHeader> (const string &headerValue) const {
 	L_D();
 	return LinphonePrivate::coreHeaderIsValid(d->grammar, "cc", headerValue);
 }
 
 template<>
-bool Cpim::Parser::coreHeaderIsValid<Cpim::DateTimeHeader>(const string &headerValue) const {
+bool Cpim::Parser::coreHeaderIsValid<Cpim::DateTimeHeader> (const string &headerValue) const {
 	static const int daysInMonth[12] = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
 
 	L_D();
@@ -396,25 +397,25 @@ bool Cpim::Parser::coreHeaderIsValid<Cpim::DateTimeHeader>(const string &headerV
 }
 
 template<>
-bool Cpim::Parser::coreHeaderIsValid<Cpim::MessageIdHeader>(const string &headerValue) const {
+bool Cpim::Parser::coreHeaderIsValid<Cpim::MessageIdHeader> (const string &headerValue) const {
 	L_D();
 	return LinphonePrivate::coreHeaderIsValid(d->grammar, "Message-ID", headerValue);
 }
 
 template<>
-bool Cpim::Parser::coreHeaderIsValid<Cpim::SubjectHeader>(const string &headerValue) const {
+bool Cpim::Parser::coreHeaderIsValid<Cpim::SubjectHeader> (const string &headerValue) const {
 	L_D();
 	return LinphonePrivate::coreHeaderIsValid(d->grammar, "Subject", headerValue);
 }
 
 template<>
-bool Cpim::Parser::coreHeaderIsValid<Cpim::NsHeader>(const string &headerValue) const {
+bool Cpim::Parser::coreHeaderIsValid<Cpim::NsHeader> (const string &headerValue) const {
 	L_D();
 	return LinphonePrivate::coreHeaderIsValid(d->grammar, "NS", headerValue);
 }
 
 template<>
-bool Cpim::Parser::coreHeaderIsValid<Cpim::RequireHeader>(const string &headerValue) const {
+bool Cpim::Parser::coreHeaderIsValid<Cpim::RequireHeader> (const string &headerValue) const {
 	L_D();
 	return LinphonePrivate::coreHeaderIsValid(d->grammar, "Require", headerValue);
 }

@@ -44,7 +44,7 @@ BasicChatRoom::BasicChatRoom (
 }
 
 BasicChatRoom::CapabilitiesMask BasicChatRoom::getCapabilities () const {
-	return static_cast<CapabilitiesMask>(Capabilities::Basic);
+	return Capabilities::Basic;
 }
 
 bool BasicChatRoom::hasBeenLeft () const {
@@ -53,6 +53,16 @@ bool BasicChatRoom::hasBeenLeft () const {
 
 bool BasicChatRoom::canHandleParticipants () const {
 	return false;
+}
+
+bool BasicChatRoom::canHandleCpim () const {
+	L_D();
+	return d->allowCpim; 
+}
+
+void BasicChatRoom::allowCpim (bool isCpimAllowed) {
+	L_D();
+	d->allowCpim = isCpimAllowed;
 }
 
 const IdentityAddress &BasicChatRoom::getConferenceAddress () const {

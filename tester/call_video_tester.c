@@ -41,8 +41,8 @@ static void call_paused_resumed_with_video_base(bool_t sdp_200_ack
 	bctbx_list_t *lcs = NULL;
 	LinphoneVideoPolicy vpol;
 	bool_t call_ok;
-	LinphoneCoreVTable *vtable = linphone_core_v_table_new();
-	vtable->call_state_changed = call_paused_resumed_with_video_base_call_cb;
+	LinphoneCoreCbs *cbs = linphone_factory_create_core_cbs(linphone_factory_get());
+	linphone_core_cbs_set_call_state_changed(cbs, call_paused_resumed_with_video_base_call_cb);
 	lcs = bctbx_list_append(lcs, pauline->lc);
 	lcs = bctbx_list_append(lcs, marie->lc);
 
@@ -92,10 +92,8 @@ static void call_paused_resumed_with_video_base(bool_t sdp_200_ack
 	wait_for_until(pauline->lc, marie->lc, NULL, 5, 2000);
 
 	/*check if video stream is still offered even if disabled*/
-#if 0
-	BC_ASSERT_EQUAL(call_pauline->localdesc->nb_streams, 2, int, "%i");
-	BC_ASSERT_EQUAL(call_marie->localdesc->nb_streams, 2, int, "%i");
-#endif
+	BC_ASSERT_EQUAL(_linphone_call_get_local_desc(call_pauline)->nb_streams, 2, int, "%i");
+	BC_ASSERT_EQUAL(_linphone_call_get_local_desc(call_marie)->nb_streams, 2, int, "%i");
 
 	linphone_core_enable_sdp_200_ack(pauline->lc,sdp_200_ack);
 
@@ -116,7 +114,7 @@ static void call_paused_resumed_with_video_base(bool_t sdp_200_ack
 		linphone_call_params_set_audio_direction(params,LinphoneMediaDirectionSendRecv);
 		linphone_call_params_set_video_direction(params,LinphoneMediaDirectionSendRecv);
 		if (with_call_accept) {
-			linphone_core_add_listener(marie->lc, vtable);
+			linphone_core_add_callbacks(marie->lc, cbs);
 		}
 		linphone_call_update(call_pauline,params);
 		BC_ASSERT_TRUE(wait_for(pauline->lc,marie->lc,&pauline->stat.number_of_LinphoneCallStreamsRunning,4));
@@ -139,6 +137,7 @@ static void call_paused_resumed_with_video_base(bool_t sdp_200_ack
 	end_call(marie, pauline);
 
 end:
+	linphone_core_cbs_unref(cbs);
 	linphone_core_manager_destroy(marie);
 	linphone_core_manager_destroy(pauline);
 	bctbx_list_free(lcs);
@@ -165,7 +164,7 @@ static void zrtp_video_call(void) {
 }
 
 static void call_state_changed_callback_to_accept_video(LinphoneCore *lc, LinphoneCall *call, LinphoneCallState state, const char *message){
-	LinphoneCoreVTable *vtable;
+	LinphoneCoreCbs *cbs;
 	if (state == LinphoneCallUpdatedByRemote){
 		LinphoneCallParams *params = linphone_core_create_call_params(lc, call);
 		linphone_call_params_enable_video(params, TRUE);
@@ -173,9 +172,8 @@ static void call_state_changed_callback_to_accept_video(LinphoneCore *lc, Linpho
 		linphone_call_params_unref(params);
 	}
 	ms_message("video acceptance listener about to be dropped");
-	vtable = belle_sip_object_data_get(BELLE_SIP_OBJECT(call),
-						"call_state_changed_callback_to_accept_video");
-	linphone_core_remove_listener(lc, vtable);
+	cbs = belle_sip_object_data_get(BELLE_SIP_OBJECT(call), "call_state_changed_callback_to_accept_video");
+	linphone_core_remove_callbacks(lc, cbs);
 	belle_sip_object_data_set(BELLE_SIP_OBJECT(call), "call_state_changed_callback_to_accept_video", NULL, NULL);
 }
 
@@ -194,11 +192,11 @@ static LinphoneCall* _request_video(LinphoneCoreManager* caller,LinphoneCoreMana
 	}
 
 	if (accept_with_params) {
-		LinphoneCoreVTable *vtable = linphone_core_v_table_new();
-		vtable->call_state_changed = call_state_changed_callback_to_accept_video;
-		linphone_core_add_listener(caller->lc, vtable);
-		belle_sip_object_data_set(BELLE_SIP_OBJECT(linphone_core_get_current_call(caller->lc)), "call_state_changed_callback_to_accept_video",
-					  vtable, (void (*)(void*))linphone_core_v_table_destroy);
+		LinphoneCoreCbs *cbs = linphone_factory_create_core_cbs(linphone_factory_get());
+		linphone_core_cbs_set_call_state_changed(cbs, call_state_changed_callback_to_accept_video);
+		linphone_core_add_callbacks(caller->lc, cbs);
+		belle_sip_object_data_set(BELLE_SIP_OBJECT(linphone_core_get_current_call(caller->lc)),
+			"call_state_changed_callback_to_accept_video", cbs, (void (*)(void*))linphone_core_cbs_unref);
 	}
 	linphone_core_enable_video_capture(callee->lc, TRUE);
 	linphone_core_enable_video_display(callee->lc, TRUE);
@@ -616,6 +614,8 @@ void video_call_base_2(LinphoneCoreManager* caller,LinphoneCoreManager* callee, 
 static void check_fir(LinphoneCoreManager* caller,LinphoneCoreManager* callee ){
 	LinphoneCall* callee_call;
 	LinphoneCall* caller_call;
+	VideoStream *callee_vstream;
+	VideoStream *caller_vstream;
 
 	callee_call=linphone_core_get_current_call(callee->lc);
 	caller_call=linphone_core_get_current_call(caller->lc);
@@ -630,31 +630,26 @@ static void check_fir(LinphoneCoreManager* caller,LinphoneCoreManager* callee ){
 
 	linphone_call_send_vfu_request(callee_call);
 
-#if 0
-	if (rtp_session_avpf_enabled(callee_call->sessions->rtp_session)){
-		BC_ASSERT_TRUE(wait_for(callee->lc,caller->lc,&caller_call->videostream->ms_video_stat.counter_rcvd_fir, 1));
-	}else{
-		BC_ASSERT_TRUE(wait_for(callee->lc,caller->lc,&caller_call->videostream->ms_video_stat.counter_rcvd_fir, 0));
-	}
-	ms_message ("check_fir : [%p] received  %d FIR  ",&caller_call ,caller_call->videostream->ms_video_stat.counter_rcvd_fir);
-	ms_message ("check_fir : [%p] stat number of iframe decoded  %d ",&callee_call, callee->stat.number_of_IframeDecoded);
-#endif
+	callee_vstream = (VideoStream *)linphone_call_get_stream(callee_call, LinphoneStreamTypeVideo);
+	caller_vstream = (VideoStream *)linphone_call_get_stream(caller_call, LinphoneStreamTypeVideo);
+	if (media_stream_avpf_enabled(&callee_vstream->ms))
+		BC_ASSERT_TRUE(wait_for(callee->lc, caller->lc, &caller_vstream->ms_video_stat.counter_rcvd_fir, 1));
+	else
+		BC_ASSERT_TRUE(wait_for(callee->lc, caller->lc, &caller_vstream->ms_video_stat.counter_rcvd_fir, 0));
+	ms_message("check_fir: [%p] received  %d FIR  ",&caller_call ,caller_vstream->ms_video_stat.counter_rcvd_fir);
+	ms_message("check_fir: [%p] stat number of iframe decoded  %d ",&callee_call, callee->stat.number_of_IframeDecoded);
 
 	linphone_call_set_next_video_frame_decoded_callback(caller_call,linphone_call_iframe_decoded_cb,caller->lc);
 	linphone_call_send_vfu_request(caller_call);
 	BC_ASSERT_TRUE( wait_for(callee->lc,caller->lc,&caller->stat.number_of_IframeDecoded,1));
 
-#if 0
-	if (rtp_session_avpf_enabled(caller_call->sessions->rtp_session)) {
-		if (rtp_session_avpf_enabled(callee_call->sessions->rtp_session)){
-			BC_ASSERT_TRUE(wait_for(callee->lc,caller->lc,&callee_call->videostream->ms_video_stat.counter_rcvd_fir, 1));
-		}
-	}else{
-		BC_ASSERT_TRUE(wait_for(callee->lc,caller->lc,&callee_call->videostream->ms_video_stat.counter_rcvd_fir, 0));
-	}
-	ms_message ("check_fir : [%p] received  %d FIR  ",&callee_call ,callee_call->videostream->ms_video_stat.counter_rcvd_fir);
-	ms_message ("check_fir : [%p] stat number of iframe decoded  %d ",&caller_call, caller->stat.number_of_IframeDecoded);
-#endif
+	if (media_stream_avpf_enabled(&caller_vstream->ms)) {
+		if (media_stream_avpf_enabled(&callee_vstream->ms))
+			BC_ASSERT_TRUE(wait_for(callee->lc, caller->lc, &callee_vstream->ms_video_stat.counter_rcvd_fir, 1));
+	} else
+		BC_ASSERT_TRUE(wait_for(callee->lc, caller->lc, &callee_vstream->ms_video_stat.counter_rcvd_fir, 0));
+	ms_message("check_fir: [%p] received  %d FIR  ", &callee_call, callee_vstream->ms_video_stat.counter_rcvd_fir);
+	ms_message("check_fir: [%p] stat number of iframe decoded  %d ", &caller_call, caller->stat.number_of_IframeDecoded);
 }
 
 void video_call_base_3(LinphoneCoreManager* caller,LinphoneCoreManager* callee, bool_t using_policy,LinphoneMediaEncryption mode, bool_t callee_video_enabled, bool_t caller_video_enabled) {

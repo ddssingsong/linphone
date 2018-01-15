@@ -1,5 +1,5 @@
 /*
- * cpim-grammar.h
+ * fs.cpp
  * Copyright (C) 2010-2017 Belledonne Communications SARL
  *
  * This program is free software; you can redistribute it and/or
@@ -17,19 +17,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CPIM_GRAMMAR_H_
-#define _CPIM_GRAMMAR_H_
+#include <fstream>
 
-#include "linphone/utils/general.h"
+#include "linphone/utils/fs.h"
 
 // =============================================================================
 
+using namespace std;
+
 LINPHONE_BEGIN_NAMESPACE
 
-namespace Cpim {
-	const char *getGrammar ();
+namespace Fs {
+	bool copy (const string &srcPath, const string &destPath) {
+		ifstream src(srcPath, ios::binary);
+		ofstream dest(destPath, ios::binary);
+		dest << src.rdbuf();
+		return !dest.fail();
+	}
 }
 
 LINPHONE_END_NAMESPACE
-
-#endif // ifndef _CPIM_GRAMMAR_H_

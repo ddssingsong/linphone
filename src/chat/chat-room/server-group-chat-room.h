@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _SERVER_GROUP_CHAT_ROOM_H_
-#define _SERVER_GROUP_CHAT_ROOM_H_
+#ifndef _L_SERVER_GROUP_CHAT_ROOM_H_
+#define _L_SERVER_GROUP_CHAT_ROOM_H_
 
 #include "chat/chat-room/chat-room.h"
 #include "conference/local-conference.h"
@@ -50,6 +50,7 @@ public:
 	const IdentityAddress &getConferenceAddress () const override;
 
 	bool canHandleParticipants () const override;
+	bool canHandleCpim () const override;
 
 	void addParticipant (const IdentityAddress &address, const CallSessionParams *params, bool hasMedia) override;
 	void addParticipants (
@@ -82,4 +83,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _SERVER_GROUP_CHAT_ROOM_H_
+#endif // ifndef _L_SERVER_GROUP_CHAT_ROOM_H_

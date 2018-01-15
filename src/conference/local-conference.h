@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _LOCAL_CONFERENCE_H_
-#define _LOCAL_CONFERENCE_H_
+#ifndef _L_LOCAL_CONFERENCE_H_
+#define _L_LOCAL_CONFERENCE_H_
 
 #include "conference.h"
 
@@ -33,6 +33,7 @@ class LocalConference : public Conference {
 
 public:
 	LocalConference (const std::shared_ptr<Core> &core, const IdentityAddress &myAddress, CallSessionListener *listener);
+	virtual ~LocalConference ();
 
 	/* ConferenceInterface */
 	void addParticipant (const IdentityAddress &addr, const CallSessionParams *params, bool hasMedia) override;
@@ -47,4 +48,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _LOCAL_CONFERENCE_H_
+#endif // ifndef _L_LOCAL_CONFERENCE_H_

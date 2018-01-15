@@ -691,13 +691,12 @@ static void call_with_sips_not_achievable(void){
 }
 
 
-#if 0
 static bool_t is_sending_ipv6(RtpSession *session, bool_t rtcp){
 	const struct sockaddr *dest = rtcp ? (struct sockaddr*)&session->rtcp.gs.rem_addr : (struct sockaddr*)&session->rtp.gs.rem_addr;
 	struct sockaddr_in6 *in6=(struct sockaddr_in6*)dest;
 	return dest->sa_family == AF_INET6 && !IN6_IS_ADDR_V4MAPPED(&in6->sin6_addr);
 }
-#endif
+
 static bool_t is_remote_contact_ipv6(LinphoneCall *call){
 	const char *contact=linphone_call_get_remote_contact(call);
 	LinphoneAddress *ct_addr;
@@ -749,12 +748,10 @@ static void _call_with_ipv6(bool_t caller_with_ipv6, bool_t callee_with_ipv6) {
 		BC_ASSERT_EQUAL(is_remote_contact_ipv6(marie_call), callee_with_ipv6, int, "%i");
 
 		/*check that the RTP destinations are IPv6 (flexisip should propose an IPv6 relay for parties with IPv6)*/
-#if 0
-		BC_ASSERT_EQUAL(is_sending_ipv6(marie_call->sessions[0].rtp_session, FALSE), caller_with_ipv6, int, "%i");
-		BC_ASSERT_EQUAL(is_sending_ipv6(marie_call->sessions[0].rtp_session, TRUE), caller_with_ipv6, int, "%i");
-		BC_ASSERT_EQUAL(is_sending_ipv6(pauline_call->sessions[0].rtp_session, FALSE), callee_with_ipv6, int, "%i");
-		BC_ASSERT_EQUAL(is_sending_ipv6(pauline_call->sessions[0].rtp_session, TRUE), callee_with_ipv6, int, "%i");
-#endif
+		BC_ASSERT_EQUAL(is_sending_ipv6(linphone_call_get_stream(marie_call, LinphoneStreamTypeAudio)->sessions.rtp_session, FALSE), caller_with_ipv6, int, "%i");
+		BC_ASSERT_EQUAL(is_sending_ipv6(linphone_call_get_stream(marie_call, LinphoneStreamTypeAudio)->sessions.rtp_session, TRUE), caller_with_ipv6, int, "%i");
+		BC_ASSERT_EQUAL(is_sending_ipv6(linphone_call_get_stream(pauline_call, LinphoneStreamTypeAudio)->sessions.rtp_session, FALSE), callee_with_ipv6, int, "%i");
+		BC_ASSERT_EQUAL(is_sending_ipv6(linphone_call_get_stream(pauline_call, LinphoneStreamTypeAudio)->sessions.rtp_session, TRUE), callee_with_ipv6, int, "%i");
 	}
 
 	liblinphone_tester_check_rtcp(marie,pauline);
@@ -1393,6 +1390,76 @@ void test_removing_old_tport(void) {
 	bctbx_list_free(lcs);
 }
 
+static const char* get_laure_rc(void) {
+	if (liblinphone_tester_ipv6_available()) {
+		return "laure_tcp_rc";
+	} else {
+		return "laure_rc_udp";
+	}
+}
+
+static void on_refer_received(SalOp *op, const SalAddress *refer_to) {
+	Sal *sal = sal_op_get_sal(op);
+	LinphoneCoreManager *receiver = (LinphoneCoreManager*)sal_get_user_pointer(sal);
+	receiver->stat.number_of_LinphoneCallRefered++;
+	sal_release_op(op);
+}
+
+void resend_refer_other_devices(void) {
+	LinphoneCoreManager* marie = linphone_core_manager_new( "marie_rc");
+	LinphoneCoreManager* pauline = linphone_core_manager_new( "pauline_rc");
+	LinphoneCoreManager* laure = linphone_core_manager_new( get_laure_rc());
+	LinphoneCoreManager* pauline2;
+	bctbx_list_t* lcs = NULL;
+
+	lcs=bctbx_list_append(lcs,marie->lc);
+	lcs=bctbx_list_append(lcs,pauline->lc);
+	lcs=bctbx_list_append(lcs,laure->lc);
+
+	/* We set Pauline's Sal callback and pass the core manager to access stats */
+	Sal *pauline_sal = linphone_core_get_sal(pauline->lc);
+	sal_set_user_pointer(pauline_sal, (void*)pauline);
+	sal_set_call_refer_callback(pauline_sal, on_refer_received);
+	
+	
+	char *marie_address = linphone_address_as_string(marie->identity);
+	char *pauline_address = linphone_address_as_string(pauline->identity);
+	char *laure_address = linphone_address_as_string(laure->identity);
+	
+	/* Then we create a refer from marie to pauline that refers to laure */
+	SalOp *op = sal_create_refer_op(linphone_core_get_sal(marie->lc));
+	sal_op_set_from(op, marie_address);
+	sal_op_set_to(op, pauline_address);
+	
+	SalAddress *address = sal_address_new(laure_address);
+	sal_address_set_param(address, "text", NULL);
+	sal_op_send_refer(op, address);
+	
+	ms_free(marie_address);
+	ms_free(pauline_address);
+	ms_free(laure_address);
+	
+	BC_ASSERT_TRUE(wait_for_list(lcs,&pauline->stat.number_of_LinphoneCallRefered,1,5000));
+	
+	/* We create another pauline and check if it has received a refer */
+	pauline2 = linphone_core_manager_new( "pauline_rc");
+	lcs=bctbx_list_append(lcs,pauline2->lc);
+	
+	Sal *pauline2_sal = linphone_core_get_sal(pauline2->lc);
+	sal_set_user_pointer(pauline2_sal, (void*)pauline2);
+	sal_set_call_refer_callback(pauline2_sal, on_refer_received);
+	
+	BC_ASSERT_TRUE(wait_for_list(lcs,&pauline2->stat.number_of_LinphoneCallRefered,1,5000));
+	
+	sal_address_unref(address);
+	sal_release_op(op);
+	linphone_core_manager_destroy(marie);
+	linphone_core_manager_destroy(pauline);
+	linphone_core_manager_destroy(laure);
+	linphone_core_manager_destroy(pauline2);
+	bctbx_list_free(lcs);
+}
+
 test_t flexisip_tests[] = {
 	TEST_ONE_TAG("Subscribe forking", subscribe_forking, "LeaksMemory"),
 	TEST_NO_TAG("Message forking", message_forking),
@@ -1430,7 +1497,8 @@ test_t flexisip_tests[] = {
 	TEST_NO_TAG("TLS authentication - client rejected due to CN mismatch", tls_client_auth_bad_certificate_cn),
 	TEST_NO_TAG("TLS authentication - client rejected due to unrecognized certificate chain", tls_client_auth_bad_certificate),
 	TEST_NO_TAG("Transcoder", transcoder_tester),
-	TEST_NO_TAG("Removing old tport on flexisip for the same client", test_removing_old_tport)
+	TEST_NO_TAG("Removing old tport on flexisip for the same client", test_removing_old_tport),
+	TEST_NO_TAG("Resend of REFER with other devices", resend_refer_other_devices)
 };
 
 

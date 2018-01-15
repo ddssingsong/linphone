@@ -17,8 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _ABSTRACT_CHAT_ROOM_H_
-#define _ABSTRACT_CHAT_ROOM_H_
+#ifndef _L_ABSTRACT_CHAT_ROOM_H_
+#define _L_ABSTRACT_CHAT_ROOM_H_
+
+#include "linphone/utils/enum-mask.h"
 
 #include "chat/chat-message/chat-message.h"
 #include "conference/conference-interface.h"
@@ -33,17 +35,20 @@ class ChatRoomId;
 class EventLog;
 
 class LINPHONE_PUBLIC AbstractChatRoom : public Object, public CoreAccessor, public ConferenceInterface {
-	friend class BasicToClientGroupChatRoomPrivate;
 	friend class ChatMessage;
 	friend class ChatMessagePrivate;
+	friend class ClientGroupToBasicChatRoomPrivate;
 	friend class CorePrivate;
 	friend class MainDb;
+	friend class ProxyChatRoomPrivate;
 
 public:
+	L_OVERRIDE_SHARED_FROM_THIS(AbstractChatRoom);
+
 	L_DECLARE_ENUM(Capabilities, L_ENUM_VALUES_CHAT_ROOM_CAPABILITIES);
 	L_DECLARE_ENUM(State, L_ENUM_VALUES_CHAT_ROOM_STATE);
 
-	typedef int CapabilitiesMask;
+	typedef EnumMask<Capabilities> CapabilitiesMask;
 
 	virtual const ChatRoomId &getChatRoomId () const = 0;
 
@@ -96,4 +101,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _ABSTRACT_CHAT_ROOM_H_
+#endif // ifndef _L_ABSTRACT_CHAT_ROOM_H_

@@ -17,10 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _MAIN_DB_H_
-#define _MAIN_DB_H_
+#ifndef _L_MAIN_DB_H_
+#define _L_MAIN_DB_H_
 
 #include <list>
+
+#include "linphone/utils/enum-mask.h"
 
 #include "abstract/abstract-db.h"
 #include "chat/chat-room/chat-room-id.h"
@@ -49,7 +51,7 @@ public:
 		ConferenceInfoFilter = 0x4
 	};
 
-	typedef int FilterMask;
+	typedef EnumMask<Filter> FilterMask;
 
 	MainDb (const std::shared_ptr<Core> &core);
 
@@ -116,12 +118,18 @@ public:
 	std::list<std::shared_ptr<AbstractChatRoom>> getChatRooms () const;
 	void insertChatRoom (const std::shared_ptr<AbstractChatRoom> &chatRoom);
 	void deleteChatRoom (const ChatRoomId &chatRoomId);
+	void enableChatRoomMigration (const ChatRoomId &chatRoomId, bool enable);
+
+	void migrateBasicToClientGroupChatRoom (
+		const std::shared_ptr<AbstractChatRoom> &basicChatRoom,
+		const std::shared_ptr<AbstractChatRoom> &clientGroupChatRoom
+	);
 
 	// ---------------------------------------------------------------------------
 	// Other.
 	// ---------------------------------------------------------------------------
 
-	// Import legacy messages from old db.
+	// Import legacy calls/messages from old db.
 	bool import (Backend backend, const std::string &parameters) override;
 
 protected:
@@ -134,4 +142,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _MAIN_DB_H_
+#endif // ifndef _L_MAIN_DB_H_

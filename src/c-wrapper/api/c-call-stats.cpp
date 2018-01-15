@@ -54,6 +54,7 @@ struct _LinphoneCallStats {
 	int rtp_remote_family; /**< Ip adress family of the remote destination */
 	int clockrate;  /*RTP clockrate of the stream, provided here for easily converting timestamp units expressed in RTCP packets in milliseconds*/
 	bool_t rtcp_received_via_mux; /*private flag, for non-regression test only*/
+	float estimated_download_bandwidth; /**<Estimated download bandwidth measurement of received stream, expressed in kbit/s, including IP/UDP/RTP headers*/
 };
 
 BELLE_SIP_DECLARE_VPTR_NO_EXPORT(LinphoneCallStats);
@@ -113,6 +114,10 @@ mblk_t *_linphone_call_stats_get_received_rtcp (const LinphoneCallStats *stats) 
 
 void _linphone_call_stats_set_received_rtcp (LinphoneCallStats *stats, mblk_t *m) {
 	stats->received_rtcp = m;
+}
+
+mblk_t *_linphone_call_stats_get_sent_rtcp (const LinphoneCallStats *stats) {
+	return stats->sent_rtcp;
 }
 
 void _linphone_call_stats_set_sent_rtcp (LinphoneCallStats *stats, mblk_t *m) {
@@ -349,4 +354,12 @@ float linphone_call_stats_get_jitter_buffer_size_ms (const LinphoneCallStats *st
 
 float linphone_call_stats_get_round_trip_delay (const LinphoneCallStats *stats) {
 	return stats->round_trip_delay;
+}
+
+float linphone_call_stats_get_estimated_download_bandwidth(const LinphoneCallStats *stats) {
+	return stats->estimated_download_bandwidth;
+}
+
+void linphone_call_stats_set_estimated_download_bandwidth(LinphoneCallStats *stats, float estimated_value) {
+	stats->estimated_download_bandwidth = estimated_value;
 }

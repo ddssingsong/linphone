@@ -22,12 +22,13 @@
 #include "linphone/core.h"
 #include "linphone/lpconfig.h"
 #include "linphone/utils/utils.h"
-#include "c-wrapper/c-wrapper.h"
+
 #include "address/address.h"
-
+#include "c-wrapper/c-wrapper.h"
+#include "call/call.h"
 #include "chat/chat-message/chat-message-p.h"
-
 #include "chat/chat-room/chat-room-p.h"
+#include "chat/chat-room/client-group-to-basic-chat-room.h"
 #include "chat/chat-room/real-time-text-chat-room.h"
 #include "chat/modifier/cpim-chat-message-modifier.h"
 #include "chat/modifier/encryption-chat-message-modifier.h"
@@ -81,9 +82,8 @@ void ChatMessagePrivate::setState (ChatMessage::State s, bool force) {
 	)
 		return;
 
-	lInfo() << "Chat message " << this << ": moving from state " <<
-		linphone_chat_message_state_to_string((LinphoneChatMessageState)state) << " to " <<
-		linphone_chat_message_state_to_string((LinphoneChatMessageState)s);
+	lInfo() << "Chat message " << this << ": moving from " << Utils::toString(state) <<
+		" to " << Utils::toString(s);
 	state = s;
 
 	LinphoneChatMessage *msg = L_GET_C_BACK_PTR(q);
@@ -203,6 +203,7 @@ void ChatMessagePrivate::setAppdata (const string &data) {
 			break;
 		}
 	}
+	store();
 }
 
 const string &ChatMessagePrivate::getExternalBodyUrl () const {
@@ -312,6 +313,18 @@ void ChatMessagePrivate::loadFileTransferUrlFromBodyToContent() {
 	fileTransferChatMessageModifier.decode(q->getSharedFromThis(), errorCode);
 }
 
+void ChatMessagePrivate::setChatRoom (const shared_ptr<AbstractChatRoom> &cr) {
+	chatRoom = cr;
+	chatRoomId = cr->getChatRoomId();
+	if (direction == ChatMessage::Direction::Outgoing) {
+		fromAddress = chatRoomId.getLocalAddress();
+		toAddress = chatRoomId.getPeerAddress();
+	} else {
+		fromAddress = chatRoomId.getPeerAddress();
+		toAddress = chatRoomId.getLocalAddress();
+	}
+}
+
 // -----------------------------------------------------------------------------
 
 void ChatMessagePrivate::sendImdn (Imdn::Type imdnType, LinphoneReason reason) {
@@ -325,6 +338,39 @@ void ChatMessagePrivate::sendImdn (Imdn::Type imdnType, LinphoneReason reason) {
 	msg->addContent(*content);
 
 	msg->getPrivate()->send();
+}
+
+static void forceUtf8Content (Content &content) {
+	// TODO: Deal with other content type in the future.
+	ContentType contentType = content.getContentType();
+	if (contentType != ContentType::PlainText)
+		return;
+
+	string charset = contentType.getParameter();
+	if (charset.empty())
+		return;
+
+	size_t n = charset.find("charset=");
+	if (n == string::npos)
+		return;
+
+	L_BEGIN_LOG_EXCEPTION
+
+	size_t begin = n + sizeof("charset");
+	size_t end = charset.find(";", begin);
+	charset = charset.substr(begin, end - begin);
+
+	if (Utils::stringToLower(charset) != "utf-8") {
+		string utf8Body = Utils::convertString(content.getBodyAsUtf8String(), charset, "UTF-8");
+		if (!utf8Body.empty()) {
+			// TODO: use move operator if possible in the future!
+			content.setBodyFromUtf8(utf8Body);
+			contentType.setParameter(string(contentType.getParameter()).replace(begin, end - begin, "UTF-8"));
+			content.setContentType(contentType);
+		}
+	}
+
+	L_END_LOG_EXCEPTION
 }
 
 LinphoneReason ChatMessagePrivate::receive () {
@@ -390,31 +436,8 @@ LinphoneReason ChatMessagePrivate::receive () {
 		contents.push_back(&internalContent);
 	}
 
-	// Convert PlainText contents if they have a charset different than UTF-8
-	for (Content *c : contents) {
-		if (c->getContentType() == ContentType::PlainText && !c->getContentType().getParameter().empty()) {
-			L_BEGIN_LOG_EXCEPTION
-				ContentType ct = c->getContentType();
-				string charset = string(ct.getParameter());
-				size_t n = charset.find("charset=");
-				if (n != string::npos) {
-					size_t begin = n + sizeof("charset");
-					size_t end = charset.find(";", begin);
-					charset = charset.substr(begin, end - begin);
-
-					if (Utils::stringToLower(charset) != "utf-8") {
-						string converted = Utils::convertString(c->getBodyAsUtf8String(), charset, "UTF-8");
-						if (!converted.empty()) {
-							c->setBodyFromUtf8(converted);
-							string params = ct.getParameter();
-							ct.setParameter(params.replace(begin, end - begin, "UTF-8"));
-							c->setContentType(ct);
-						}
-					}
-				}
-			L_END_LOG_EXCEPTION
-		}
-	}
+	for (auto &content : contents)
+		forceUtf8Content(*content);
 
 	// ---------------------------------------
 	// End of message modification
@@ -459,7 +482,7 @@ LinphoneReason ChatMessagePrivate::receive () {
 void ChatMessagePrivate::send () {
 	L_Q();
 	SalOp *op = salOp;
-	LinphoneCall *call = nullptr;
+	LinphoneCall *lcall = nullptr;
 	int errorCode = 0;
 
 	if ((currentSendStep & ChatMessagePrivate::Step::FileUpload) == ChatMessagePrivate::Step::FileUpload) {
@@ -478,14 +501,18 @@ void ChatMessagePrivate::send () {
 
 	shared_ptr<Core> core = q->getCore();
 	if (lp_config_get_int(core->getCCore()->config, "sip", "chat_use_call_dialogs", 0) != 0) {
-		call = linphone_core_get_call_by_remote_address(core->getCCore(), q->getToAddress().asString().c_str());
-		if (call) {
-			if (linphone_call_get_state(call) == LinphoneCallConnected || linphone_call_get_state(call) == LinphoneCallStreamsRunning ||
-					linphone_call_get_state(call) == LinphoneCallPaused || linphone_call_get_state(call) == LinphoneCallPausing ||
-					linphone_call_get_state(call) == LinphoneCallPausedByRemote) {
+		lcall = linphone_core_get_call_by_remote_address(core->getCCore(), q->getToAddress().asString().c_str());
+		if (lcall) {
+			shared_ptr<Call> call = L_GET_CPP_PTR_FROM_C_OBJECT(lcall);
+			if ((call->getState() == CallSession::State::Connected)
+				|| (call->getState() == CallSession::State::StreamsRunning)
+				|| (call->getState() == CallSession::State::Paused)
+				|| (call->getState() == CallSession::State::Pausing)
+				|| (call->getState() == CallSession::State::PausedByRemote)
+			) {
 				lInfo() << "send SIP msg through the existing call.";
-				op = linphone_call_get_op(call);
-				string identity = linphone_core_find_best_identity(core->getCCore(), linphone_call_get_remote_address(call));
+				op = linphone_call_get_op(lcall);
+				string identity = linphone_core_find_best_identity(core->getCCore(), linphone_call_get_remote_address(lcall));
 				if (identity.empty()) {
 					LinphoneAddress *addr = linphone_address_new(q->getToAddress().asString().c_str());
 					LinphoneProxyConfig *proxy = linphone_core_lookup_known_proxy(core->getCCore(), addr);
@@ -520,7 +547,7 @@ void ChatMessagePrivate::send () {
 
 	if (applyModifiers) {
 		// Do not multipart or encapsulate with CPIM in an old ChatRoom to maintain backward compatibility
-		if (q->getChatRoom()->canHandleParticipants()) {
+		if (q->getChatRoom()->canHandleCpim()) {
 			if ((currentSendStep &ChatMessagePrivate::Step::Multipart) == ChatMessagePrivate::Step::Multipart) {
 				lInfo() << "Multipart step already done, skipping";
 			} else {
@@ -548,7 +575,7 @@ void ChatMessagePrivate::send () {
 			currentSendStep |= ChatMessagePrivate::Step::Encryption;
 		}
 
-		if (q->getChatRoom()->canHandleParticipants()) {
+		if (q->getChatRoom()->canHandleCpim()) {
 			if ((currentSendStep &ChatMessagePrivate::Step::Cpim) == ChatMessagePrivate::Step::Cpim) {
 				lInfo() << "Cpim step already done, skipping";
 			} else {
@@ -594,7 +621,7 @@ void ChatMessagePrivate::send () {
 
 	//store(); // Store will be done right below in the setState(InProgress)
 
-	if (call && linphone_call_get_op(call) == op) {
+	if (lcall && linphone_call_get_op(lcall) == op) {
 		/* In this case, chat delivery status is not notified, so unrefing chat message right now */
 		/* Might be better fixed by delivering status, but too costly for now */
 		return;
@@ -662,16 +689,8 @@ ChatMessage::ChatMessage (const shared_ptr<AbstractChatRoom> &chatRoom, ChatMess
 	Object(*new ChatMessagePrivate), CoreAccessor(chatRoom->getCore()) {
 	L_D();
 
-	d->chatRoom = chatRoom;
-	d->chatRoomId = chatRoom->getChatRoomId();
-	if (direction == Direction::Outgoing) {
-		d->fromAddress = d->chatRoomId.getLocalAddress();
-		d->toAddress = d->chatRoomId.getPeerAddress();
-	} else {
-		d->fromAddress = d->chatRoomId.getPeerAddress();
-		d->toAddress = d->chatRoomId.getLocalAddress();
-	}
 	d->direction = direction;
+	d->setChatRoom(chatRoom);
 }
 
 ChatMessage::~ChatMessage () {
@@ -681,6 +700,8 @@ ChatMessage::~ChatMessage () {
 
 	if (d->salOp)
 		d->salOp->release();
+	if (d->salCustomHeaders)
+		sal_custom_header_unref(d->salCustomHeaders);
 }
 
 shared_ptr<AbstractChatRoom> ChatMessage::getChatRoom () const {

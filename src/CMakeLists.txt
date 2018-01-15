@@ -42,10 +42,14 @@ set(LINPHONE_CXX_OBJECTS_PRIVATE_HEADER_FILES
 	chat/chat-room/basic-chat-room.h
 	chat/chat-room/basic-to-client-group-chat-room.h
 	chat/chat-room/chat-room-id.h
+	chat/chat-room/chat-room-listener.h
 	chat/chat-room/chat-room-p.h
 	chat/chat-room/chat-room.h
 	chat/chat-room/client-group-chat-room-p.h
 	chat/chat-room/client-group-chat-room.h
+	chat/chat-room/client-group-to-basic-chat-room.h
+	chat/chat-room/proxy-chat-room-p.h
+	chat/chat-room/proxy-chat-room.h
 	chat/chat-room/real-time-text-chat-room-p.h
 	chat/chat-room/real-time-text-chat-room.h
 	chat/chat-room/server-group-chat-room-p.h
@@ -56,7 +60,6 @@ set(LINPHONE_CXX_OBJECTS_PRIVATE_HEADER_FILES
 	chat/cpim/header/cpim-header-p.h
 	chat/cpim/header/cpim-header.h
 	chat/cpim/message/cpim-message.h
-	chat/cpim/parser/cpim-grammar.h
 	chat/cpim/parser/cpim-parser.h
 	chat/modifier/chat-message-modifier.h
 	chat/modifier/cpim-chat-message-modifier.h
@@ -177,13 +180,14 @@ set(LINPHONE_CXX_OBJECTS_SOURCE_FILES
 	chat/chat-room/chat-room-id.cpp
 	chat/chat-room/chat-room.cpp
 	chat/chat-room/client-group-chat-room.cpp
+	chat/chat-room/client-group-to-basic-chat-room.cpp
+	chat/chat-room/proxy-chat-room.cpp
 	chat/chat-room/real-time-text-chat-room.cpp
 	chat/chat-room/server-group-chat-room-stub.cpp
 	chat/cpim/header/cpim-core-headers.cpp
 	chat/cpim/header/cpim-generic-header.cpp
 	chat/cpim/header/cpim-header.cpp
 	chat/cpim/message/cpim-message.cpp
-	chat/cpim/parser/cpim-grammar.cpp
 	chat/cpim/parser/cpim-parser.cpp
 	chat/modifier/cpim-chat-message-modifier.cpp
 	chat/modifier/encryption-chat-message-modifier.cpp
@@ -246,6 +250,7 @@ set(LINPHONE_CXX_OBJECTS_SOURCE_FILES
 	sal/refer-op.cpp
 	sal/register-op.cpp
 	sal/sal.cpp
+	utils/fs.cpp
 	utils/general.cpp
 	utils/payload-type-handler.cpp
 	utils/utils.cpp

@@ -17,12 +17,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _C_TYPES_H_
-#define _C_TYPES_H_
+#ifndef _L_C_TYPES_H_
+#define _L_C_TYPES_H_
 
 // TODO: Remove me in the future.
 #include "linphone/types.h"
 
+#include "linphone/enums/call-enums.h"
 #include "linphone/enums/chat-message-enums.h"
 #include "linphone/enums/chat-room-enums.h"
 #include "linphone/enums/event-log-enums.h"
@@ -118,6 +119,12 @@ typedef struct _LinphoneChatMessageCbs LinphoneChatMessageCbs;
 typedef struct _LinphoneChatRoom LinphoneChatRoom;
 
 /**
+ * A mask of LinphoneChatRoomCapabilities
+ * @ingroup chatroom
+ */
+typedef int LinphoneChatRoomCapabilitiesMask;
+
+/**
  * An object to handle the callbacks for the handling a LinphoneChatRoom objects.
  * @ingroup chatroom
  */
@@ -154,6 +161,17 @@ typedef struct _LinphoneParticipant LinphoneParticipant;
 // =============================================================================
 
 // -----------------------------------------------------------------------------
+// Call.
+// -----------------------------------------------------------------------------
+
+/**
+ * LinphoneCallState enum represents the different state a call can reach into.
+ * The application is notified of state changes through the LinphoneCoreVTable::call_state_changed callback.
+ * @ingroup call_control
+**/
+L_DECLARE_C_ENUM(CallState, L_ENUM_VALUES_CALL_SESSION_STATE);
+
+// -----------------------------------------------------------------------------
 // ChatRoom.
 // -----------------------------------------------------------------------------
 
@@ -168,6 +186,12 @@ L_DECLARE_C_ENUM(ChatMessageDirection, L_ENUM_VALUES_CHAT_MESSAGE_DIRECTION);
  * @ingroup chatroom
 */
 L_DECLARE_C_ENUM(ChatMessageState, L_ENUM_VALUES_CHAT_MESSAGE_STATE);
+
+/**
+ * LinphoneChatRoomCapabilities is used to indicated the capabilities of a chat room.
+ * @ingroup chatroom
+ */
+L_DECLARE_C_ENUM_FIXED_VALUES(ChatRoomCapabilities, L_ENUM_VALUES_CHAT_ROOM_CAPABILITIES);
 
 /**
  * LinphoneChatRoomState is used to indicate the current state of a chat room.
@@ -189,4 +213,4 @@ L_DECLARE_C_ENUM(EventLogType, L_ENUM_VALUES_EVENT_LOG_TYPE);
 	}
 #endif // ifdef __cplusplus
 
-#endif // ifndef _C_TYPES_H_
+#endif // ifndef _L_C_TYPES_H_

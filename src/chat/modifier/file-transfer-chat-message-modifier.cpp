@@ -383,6 +383,11 @@ void FileTransferChatMessageModifier::processResponseFromPostFile (const belle_h
 				releaseHttpRequest();
 				fileUploadEndBackgroundTask();
 			}
+		} else if (code == 400) {
+			lWarning() << "Received HTTP code response " << code << " for file transfer, probably meaning file is too large";
+			chatMessage->updateState(ChatMessage::State::FileTransferError);
+			releaseHttpRequest();
+			fileUploadEndBackgroundTask();
 		} else {
 			lWarning() << "Unhandled HTTP code response " << code << " for file transfer";
 			chatMessage->updateState(ChatMessage::State::NotDelivered);
@@ -416,7 +421,7 @@ void FileTransferChatMessageModifier::processAuthRequestedUpload (const belle_si
 
 int FileTransferChatMessageModifier::uploadFile () {
 	if (httpRequest) {
-		lError() << "linphone_chat_room_upload_file(): there is already an upload in progress.";
+		lError() << "Unable to upload file: there is already an upload in progress.";
 		return -1;
 	}
 
@@ -517,10 +522,16 @@ static void fillFileTransferContentInformationsFromVndGsmaRcsFtHttpXml(FileTrans
 				if (!xmlStrcmp(typeAttribute, (const xmlChar *)"file")) {         /* this is the node we are looking for */
 					cur = cur->xmlChildrenNode;           /* now loop on the content of the file-info node */
 					while (cur != nullptr) {
+						if (!xmlStrcmp(cur->name, (const xmlChar *)"file-size")) {
+							xmlChar *fileSizeString = xmlNodeListGetString(xmlMessageBody, cur->xmlChildrenNode, 1);
+							size_t size = (size_t)strtol((const char *)fileSizeString, nullptr, 10);
+							fileTransferContent->setFileSize(size);
+							xmlFree(fileSizeString);
+						}
+
 						if (!xmlStrcmp(cur->name, (const xmlChar *)"file-name")) {
 							xmlChar *filename = xmlNodeListGetString(xmlMessageBody, cur->xmlChildrenNode, 1);
 							fileTransferContent->setFileName((char *)filename);
-
 							xmlFree(filename);
 						}
 						if (!xmlStrcmp(cur->name, (const xmlChar *)"data")) {
@@ -766,7 +777,7 @@ void FileTransferChatMessageModifier::onRecvEnd (belle_sip_user_body_handler_t *
 				FileTransferContent *fileTransferContent = (FileTransferContent*)content;
 				if (fileTransferContent->getFileContent() == fileContent) {
 					chatMessage->removeContent(*content);
-					free(fileTransferContent);
+					delete fileTransferContent;
 					break;
 				}
 			}

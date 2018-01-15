@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CALL_P_H_
-#define _CALL_P_H_
+#ifndef _L_CALL_P_H_
+#define _L_CALL_P_H_
 
 #include "call.h"
 #include "conference/conference.h"
@@ -59,6 +59,7 @@ public:
 	bool getRingingBeep () const { return ringingBeep; }
 	void setAudioMuted (bool value);
 	void setRingingBeep (bool value) { ringingBeep = value; }
+	LinphoneCallStats *getStats (LinphoneStreamType type) const;
 
 	void createPlayer () const;
 
@@ -78,11 +79,12 @@ private:
 	bool onCallSessionAccepted (const std::shared_ptr<const CallSession> &session) override;
 	void onCallSessionConferenceStreamStarting (const std::shared_ptr<const CallSession> &session, bool mute) override;
 	void onCallSessionConferenceStreamStopping (const std::shared_ptr<const CallSession> &session) override;
+	void onCallSessionEarlyFailed (const std::shared_ptr<const CallSession> &session, LinphoneErrorInfo *ei) override;
 	void onCallSessionSetReleased (const std::shared_ptr<const CallSession> &session) override;
 	void onCallSessionSetTerminated (const std::shared_ptr<const CallSession> &session) override;
 	void onCallSessionStartReferred (const std::shared_ptr<const CallSession> &session) override;
-	void onCallSessionStateChanged (const std::shared_ptr<const CallSession> &session, LinphoneCallState state, const std::string &message) override;
-	void onCallSessionTransferStateChanged (const std::shared_ptr<const CallSession> &session, LinphoneCallState state) override;
+	void onCallSessionStateChanged (const std::shared_ptr<const CallSession> &session, CallSession::State state, const std::string &message) override;
+	void onCallSessionTransferStateChanged (const std::shared_ptr<const CallSession> &session, CallSession::State state) override;
 	void onCheckForAcceptation (const std::shared_ptr<const CallSession> &session) override;
 	void onDtmfReceived (const std::shared_ptr<const CallSession> &session, char dtmf) override;
 	void onIncomingCallSessionNotified (const std::shared_ptr<const CallSession> &session) override;
@@ -91,7 +93,10 @@ private:
 	void onInfoReceived (const std::shared_ptr<const CallSession> &session, const LinphoneInfoMessage *im) override;
 	void onNoMediaTimeoutCheck (const std::shared_ptr<const CallSession> &session, bool oneSecondElapsed) override;
 	void onEncryptionChanged (const std::shared_ptr<const CallSession> &session, bool activated, const std::string &authToken) override;
+	void onCallSessionStateChangedForReporting (const std::shared_ptr<const CallSession> &session) override;
+	void onRtcpUpdateForReporting (const std::shared_ptr<const CallSession> &session, SalStreamType type) override;
 	void onStatsUpdated (const std::shared_ptr<const CallSession> &session, const LinphoneCallStats *stats) override;
+	void onUpdateMediaInfoForReporting (const std::shared_ptr<const CallSession> &session, int statsType) override;
 	void onResetCurrentSession (const std::shared_ptr<const CallSession> &session) override;
 	void onSetCurrentSession (const std::shared_ptr<const CallSession> &session) override;
 	void onFirstVideoFrameDecoded (const std::shared_ptr<const CallSession> &session) override;
@@ -119,4 +124,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CALL_P_H_
+#endif // ifndef _L_CALL_P_H_

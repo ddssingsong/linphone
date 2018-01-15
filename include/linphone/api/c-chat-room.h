@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _C_CHAT_ROOM_H_
-#define _C_CHAT_ROOM_H_
+#ifndef _L_C_CHAT_ROOM_H_
+#define _L_C_CHAT_ROOM_H_
 
 #include "linphone/api/c-types.h"
 
@@ -313,6 +313,13 @@ LINPHONE_PUBLIC bool_t linphone_chat_room_can_handle_participants (const Linphon
 LINPHONE_PUBLIC LinphoneParticipant *linphone_chat_room_find_participant (const LinphoneChatRoom *cr, const LinphoneAddress *addr);
 
 /**
+ * Get the capabilities of a chat room.
+ * @param[in] cr A LinphoneChatRoom object
+ * @return The capabilities of the chat room
+ */
+LINPHONE_PUBLIC LinphoneChatRoomCapabilitiesMask linphone_chat_room_get_capabilities (const LinphoneChatRoom *cr);
+
+/**
  * Get the conference address of the chat room.
  * @param[in] cr A LinphoneChatRoom object
  * @return The conference address of the chat room or NULL if this type of chat room is not conference based
@@ -398,6 +405,24 @@ LINPHONE_PUBLIC const bctbx_list_t * linphone_chat_room_get_composing_addresses(
 LINPHONE_PUBLIC void linphone_chat_room_set_conference_address (LinphoneChatRoom *cr, const LinphoneAddress *confAddr);
 
 /**
+ * Set the participant device. This function needs to be called from the
+ * LinphoneChatRoomCbsParticipantDeviceFetchedCb callback and only there.
+ * @param[in] cr A LinphoneChatRoom object
+ * @param[in] partAddr The participant address
+ * @param[in] partDevices \bctbx_list{LinphoneAddress} list of the participant devices to be used by the group chat room
+ */
+LINPHONE_PUBLIC void linphone_chat_room_set_participant_devices (LinphoneChatRoom *cr, const LinphoneAddress *partAddr, const bctbx_list_t *partDevices);
+
+/**
+ * Set the participant device. This function needs to be called from the
+ * LinphoneChatRoomCbsParticipantsCapabilitiesCheckedCb callback and only there.
+ * @param[in] cr A LinphoneChatRoom object
+ * @param[in] deviceAddr The device address
+ * @param[in] participantsCompatible \bctbx_list{LinphoneAddress}
+ */
+LINPHONE_PUBLIC void linphone_chat_room_add_compatible_participants (LinphoneChatRoom *cr, const LinphoneAddress *deviceAddr, const bctbx_list_t *participantsCompatible);
+
+/**
  * Returns back pointer to #LinphoneCore object.
  * @deprecated use linphone_chat_room_get_core()
  * @donotwrap
@@ -420,4 +445,4 @@ LINPHONE_PUBLIC LINPHONE_DEPRECATED void linphone_chat_room_destroy(LinphoneChat
 	}
 #endif // ifdef __cplusplus
 
-#endif // ifndef _C_CHAT_ROOM_H_
+#endif // ifndef _L_C_CHAT_ROOM_H_

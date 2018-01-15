@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CORE_H_
-#define _CORE_H_
+#ifndef _L_CORE_H_
+#define _L_CORE_H_
 
 #include <list>
 
@@ -40,12 +40,16 @@ class IdentityAddress;
 class AbstractChatRoom;
 
 class LINPHONE_PUBLIC Core : public Object {
+	friend class BasicToClientGroupChatRoom;
+	friend class BasicToClientGroupChatRoomPrivate;
 	friend class CallPrivate;
 	friend class CallSession;
 	friend class ChatMessagePrivate;
 	friend class ChatRoom;
 	friend class ChatRoomPrivate;
 	friend class ClientGroupChatRoom;
+	friend class ClientGroupChatRoomPrivate;
+	friend class ClientGroupToBasicChatRoomPrivate;
 	friend class LocalConferenceEventHandlerPrivate;
 	friend class MainDb;
 	friend class MainDbChatMessageKey;
@@ -103,6 +107,7 @@ public:
 		const IdentityAddress &localAddress
 	);
 
+	std::shared_ptr<AbstractChatRoom> onlyGetOrCreateBasicChatRoom (const IdentityAddress &peerAddress, bool isRtt = false);
 	std::shared_ptr<AbstractChatRoom> getOrCreateBasicChatRoom (const ChatRoomId &chatRoomId, bool isRtt = false);
 	std::shared_ptr<AbstractChatRoom> getOrCreateBasicChatRoom (const IdentityAddress &peerAddress, bool isRtt = false);
 
@@ -126,4 +131,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CORE_H_
+#endif // ifndef _L_CORE_H_

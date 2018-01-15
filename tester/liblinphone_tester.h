@@ -291,14 +291,16 @@ typedef struct _stats {
 
 
 typedef struct _LinphoneCoreManager {
-	LinphoneCoreVTable v_table;
-	LinphoneCore* lc;
+	LinphoneCoreCbs *cbs;
+	LinphoneCore *lc;
 	stats stat;
-	LinphoneAddress* identity;
+	LinphoneAddress *identity;
 	LinphoneEvent *lev;
 	bool_t decline_subscribe;
 	int number_of_bcunit_error_at_creation;
-	char* phone_alias;
+	char *phone_alias;
+	char *rc_path;
+	char *database_path;
 } LinphoneCoreManager;
 
 typedef struct _LinphoneConferenceServer {
@@ -318,11 +320,14 @@ typedef struct _LinphoneCallTestParams {
 void liblinphone_tester_add_suites(void);
 
 void linphone_core_manager_init(LinphoneCoreManager *mgr, const char* rc_file, const char* phone_alias);
-void linphone_core_manager_start(LinphoneCoreManager *mgr, int check_for_proxies);
-LinphoneCoreManager* linphone_core_manager_new3(const char* rc_file, int check_for_proxies, const char* phone_alias);
-LinphoneCoreManager* linphone_core_manager_new2(const char* rc_file, int check_for_proxies);
+void linphone_core_manager_start(LinphoneCoreManager *mgr, bool_t check_for_proxies);
+LinphoneCoreManager* linphone_core_manager_create2(const char* rc_file, const char* phone_alias);
+LinphoneCoreManager* linphone_core_manager_create(const char* rc_file);
+LinphoneCoreManager* linphone_core_manager_new3(const char* rc_file, bool_t check_for_proxies, const char* phone_alias);
+LinphoneCoreManager* linphone_core_manager_new2(const char* rc_file, bool_t check_for_proxies);
 LinphoneCoreManager* linphone_core_manager_new(const char* rc_file);
 void linphone_core_manager_stop(LinphoneCoreManager *mgr);
+void linphone_core_manager_restart(LinphoneCoreManager *mgr, bool_t check_for_proxies);
 void linphone_core_manager_uninit(LinphoneCoreManager *mgr);
 void linphone_core_manager_wait_for_stun_resolution(LinphoneCoreManager *mgr);
 void linphone_core_manager_destroy(LinphoneCoreManager* mgr);
@@ -390,7 +395,7 @@ bool_t liblinphone_tester_clock_elapsed(const MSTimeSpec *start, int value_ms);
 void linphone_core_manager_check_accounts(LinphoneCoreManager *m);
 void account_manager_destroy(void);
 LinphoneAddress *account_manager_get_identity_with_modified_identity(const LinphoneAddress *modified_identity);
-LinphoneCore* configure_lc_from(LinphoneCoreVTable* v_table, const char* path, const char* file, void* user_data);
+LinphoneCore *configure_lc_from(LinphoneCoreCbs *cbs, const char *path, const char *file, void *user_data);
 
 void linphone_call_iframe_decoded_cb(LinphoneCall *call,void * user_data);
 void call_paused_resumed_base(bool_t multicast,bool_t with_losses);

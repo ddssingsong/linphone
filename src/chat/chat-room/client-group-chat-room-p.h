@@ -17,18 +17,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CLIENT_GROUP_CHAT_ROOM_P_H_
-#define _CLIENT_GROUP_CHAT_ROOM_P_H_
+#ifndef _L_CLIENT_GROUP_CHAT_ROOM_P_H_
+#define _L_CLIENT_GROUP_CHAT_ROOM_P_H_
 
 #include "chat/chat-room/chat-room-p.h"
 #include "client-group-chat-room.h"
-#include "conference/session/call-session-listener.h"
 
 // =============================================================================
 
 LINPHONE_BEGIN_NAMESPACE
 
-class ClientGroupChatRoomPrivate : public ChatRoomPrivate, public CallSessionListener {
+class ClientGroupChatRoomPrivate : public ChatRoomPrivate {
 public:
 	ClientGroupChatRoomPrivate () = default;
 
@@ -37,14 +36,24 @@ public:
 	void notifyReceived (const std::string &body);
 	void multipartNotifyReceived (const std::string &body);
 
-private:
+	void setCallSessionListener (CallSessionListener *listener);
+	void setChatRoomListener (ChatRoomListener *listener) { chatRoomListener = listener; }
+
+	// ChatRoomListener
+	void onChatRoomInsertRequested (const std::shared_ptr<AbstractChatRoom> &chatRoom) override;
+	void onChatRoomInsertInDatabaseRequested (const std::shared_ptr<AbstractChatRoom> &chatRoom) override;
+
 	// CallSessionListener
 	void onCallSessionSetReleased (const std::shared_ptr<const CallSession> &session) override;
-	void onCallSessionStateChanged (const std::shared_ptr<const CallSession> &session, LinphoneCallState state, const std::string &message) override;
+	void onCallSessionStateChanged (const std::shared_ptr<const CallSession> &session, CallSession::State state, const std::string &message) override;
+
+private:
+	CallSessionListener *callSessionListener = this;
+	ChatRoomListener *chatRoomListener = this;
 
 	L_DECLARE_PUBLIC(ClientGroupChatRoom);
 };
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CLIENT_GROUP_CHAT_ROOM_P_H_
+#endif // ifndef _L_CLIENT_GROUP_CHAT_ROOM_P_H_

@@ -83,6 +83,15 @@ LINPHONE_PUBLIC MediaStream * linphone_call_get_stream(LinphoneCall *call, Linph
 LINPHONE_PUBLIC bool_t linphone_call_get_all_muted(const LinphoneCall *call);
 LINPHONE_PUBLIC LinphoneProxyConfig * linphone_call_get_dest_proxy(const LinphoneCall *call);
 LINPHONE_PUBLIC unsigned int _linphone_call_get_nb_media_starts (const LinphoneCall *call);
+LINPHONE_PUBLIC belle_sip_source_t *_linphone_call_get_dtmf_timer (const LinphoneCall *call);
+LINPHONE_PUBLIC bool_t _linphone_call_has_dtmf_sequence (const LinphoneCall *call);
+LINPHONE_PUBLIC SalMediaDescription *_linphone_call_get_local_desc (const LinphoneCall *call);
+LINPHONE_PUBLIC SalMediaDescription *_linphone_call_get_result_desc (const LinphoneCall *call);
+LINPHONE_PUBLIC MSWebCam *_linphone_call_get_video_device (const LinphoneCall *call);
+LINPHONE_PUBLIC void _linphone_call_add_local_desc_changed_flag (LinphoneCall *call, int flag);
+LINPHONE_PUBLIC int _linphone_call_get_main_audio_stream_index (const LinphoneCall *call);
+LINPHONE_PUBLIC int _linphone_call_get_main_text_stream_index (const LinphoneCall *call);
+LINPHONE_PUBLIC int _linphone_call_get_main_video_stream_index (const LinphoneCall *call);
 
 LINPHONE_PUBLIC void linphone_call_params_set_no_user_consent(LinphoneCallParams *params, bool_t value);
 LINPHONE_PUBLIC bool_t linphone_call_params_get_update_call_when_ice_completed(const LinphoneCallParams *params);
@@ -93,6 +102,8 @@ LINPHONE_PUBLIC mblk_t *_linphone_call_stats_get_received_rtcp (const LinphoneCa
 
 LINPHONE_PUBLIC LinphoneQualityReporting *linphone_call_log_get_quality_reporting(LinphoneCallLog *call_log);
 LINPHONE_PUBLIC reporting_session_report_t **linphone_quality_reporting_get_reports(LinphoneQualityReporting *qreporting);
+
+LINPHONE_PUBLIC void _linphone_chat_room_enable_migration(LinphoneChatRoom *cr, bool_t enable);
 
 LINPHONE_PUBLIC MSList* linphone_core_fetch_friends_from_db(LinphoneCore *lc, LinphoneFriendList *list);
 LINPHONE_PUBLIC MSList* linphone_core_fetch_friends_lists_from_db(LinphoneCore *lc);
@@ -143,6 +154,16 @@ LINPHONE_PUBLIC void sal_call_set_sdp_handling(SalOp *h, SalOpSDPHandling handli
 LINPHONE_PUBLIC SalMediaDescription * sal_call_get_final_media_description(SalOp *h);
 
 LINPHONE_PUBLIC belle_sip_resolver_context_t *sal_resolve_a(Sal *sal, const char *name, int port, int family, belle_sip_resolver_callback_t cb, void *data);
+
+LINPHONE_PUBLIC Sal *sal_op_get_sal(SalOp *op);
+LINPHONE_PUBLIC SalOp *sal_create_refer_op(Sal *sal);
+LINPHONE_PUBLIC void sal_release_op(SalOp *op);
+LINPHONE_PUBLIC void sal_op_set_from(SalOp *sal_refer_op, const char* from);
+LINPHONE_PUBLIC void sal_op_set_to(SalOp *sal_refer_op, const char* to);
+LINPHONE_PUBLIC void sal_op_send_refer(SalOp *sal_refer_op, SalAddress* refer_to);
+LINPHONE_PUBLIC void sal_set_user_pointer(Sal *sal, void *user_pointer);
+LINPHONE_PUBLIC void *sal_get_user_pointer(Sal *sal);
+LINPHONE_PUBLIC void sal_set_call_refer_callback(Sal *sal, void (*OnReferCb)(SalOp *op, const SalAddress *referto));
 #endif
 
 #ifdef __cplusplus

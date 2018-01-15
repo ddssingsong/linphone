@@ -17,18 +17,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _SERVER_GROUP_CHAT_ROOM_P_H_
-#define _SERVER_GROUP_CHAT_ROOM_P_H_
+#ifndef _L_SERVER_GROUP_CHAT_ROOM_P_H_
+#define _L_SERVER_GROUP_CHAT_ROOM_P_H_
 
 #include "chat-room-p.h"
-#include "conference/session/call-session-listener.h"
 #include "server-group-chat-room.h"
 
 // =============================================================================
 
 LINPHONE_BEGIN_NAMESPACE
 
-class ServerGroupChatRoomPrivate : public ChatRoomPrivate, public CallSessionListener {
+class ServerGroupChatRoomPrivate : public ChatRoomPrivate {
 public:
 	std::shared_ptr<Participant> addParticipant (const IdentityAddress &participantAddress);
 	void removeParticipant (const std::shared_ptr<const Participant> &participant);
@@ -47,6 +46,7 @@ public:
 
 	void setConferenceAddress (const IdentityAddress &conferenceAddress);
 	void setParticipantDevices (const IdentityAddress &addr, const std::list<IdentityAddress> &devices);
+	void addCompatibleParticipants (const IdentityAddress &deviceAddr, const std::list<IdentityAddress> &participantCompatible);
 
 	LinphoneReason onSipMessageReceived (SalOp *op, const SalMessage *message) override;
 
@@ -55,18 +55,24 @@ private:
 	void finalizeCreation ();
 	bool isAdminLeft () const;
 
+	// ChatRoomListener
+	void onChatRoomInsertRequested (const std::shared_ptr<AbstractChatRoom> &chatRoom) override;
+	void onChatRoomInsertInDatabaseRequested (const std::shared_ptr<AbstractChatRoom> &chatRoom) override;
+	void onChatRoomDeleteRequested (const std::shared_ptr<AbstractChatRoom> &chatRoom) override;
+
 	// CallSessionListener
 	void onCallSessionStateChanged (
 		const std::shared_ptr<const CallSession> &session,
-		LinphoneCallState state,
+		CallSession::State state,
 		const std::string &message
 	) override;
 
 	std::list<std::shared_ptr<Participant>> removedParticipants;
+	ChatRoomListener *chatRoomListener = this;
 
 	L_DECLARE_PUBLIC(ServerGroupChatRoom);
 };
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _SERVER_GROUP_CHAT_ROOM_P_H_
+#endif // ifndef _L_SERVER_GROUP_CHAT_ROOM_P_H_

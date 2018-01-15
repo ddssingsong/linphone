@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _MEDIA_SESSION_P_H_
-#define _MEDIA_SESSION_P_H_
+#ifndef _L_MEDIA_SESSION_P_H_
+#define _L_MEDIA_SESSION_P_H_
 
 #include <utility>
 
@@ -93,13 +93,23 @@ public:
 	int getStreamIndex (LinphoneStreamType type) const;
 	int getStreamIndex (MediaStream *ms) const;
 	SalCallOp * getOp () const { return op; }
+	MSWebCam *getVideoDevice () const;
 	void setAudioMuted (bool value) { audioMuted = value; }
 
 	void initializeStreams ();
 	void stopStreams ();
 
+	// Methods used by testers
+	void addLocalDescChangedFlag (int flag) { localDescChanged |= flag; }
+	belle_sip_source_t *getDtmfTimer () const { return dtmfTimer; }
+	const std::string &getDtmfSequence () const { return dtmfSequence; }
+	int getMainAudioStreamIndex () const { return mainAudioStreamIndex; }
+	int getMainTextStreamIndex () const { return mainTextStreamIndex; }
+	int getMainVideoStreamIndex () const { return mainVideoStreamIndex; }
+	SalMediaDescription *getResultDesc () const { return resultDesc; }
+
 	// CoreListener
-	void onNetworkReachable (bool reachable) override;
+	void onNetworkReachable (bool sipNetworkReachable, bool mediaNetworkReachable) override;
 
 private:
 	static OrtpJitterBufferAlgorithm jitterBufferNameToAlgo (const std::string &name);
@@ -115,7 +125,7 @@ private:
 	static float aggregateQualityRatings (float audioRating, float videoRating);
 
 	std::shared_ptr<Participant> getMe () const;
-	void setState (LinphoneCallState newState, const std::string &message) override;
+	void setState (CallSession::State newState, const std::string &message) override;
 
 	void computeStreamsIndexes (const SalMediaDescription *md);
 	void fixCallParams (SalMediaDescription *rmd);
@@ -129,7 +139,6 @@ private:
 
 	OrtpEvQueue *getEventQueue (int streamIndex) const;
 	MediaStream *getMediaStream (int streamIndex) const;
-	MSWebCam *getVideoDevice () const;
 
 	void fillMulticastMediaAddresses ();
 	int selectFixedPort (int streamIndex, std::pair<int, int> portRange);
@@ -195,16 +204,16 @@ private:
 	void postConfigureAudioStreams (bool muted);
 	void setSymmetricRtp (bool value);
 	void setupRingbackPlayer ();
-	void startAudioStream (LinphoneCallState targetState, bool videoWillBeUsed);
-	void startStreams (LinphoneCallState targetState);
+	void startAudioStream (CallSession::State targetState, bool videoWillBeUsed);
+	void startStreams (CallSession::State targetState);
 	void startTextStream ();
-	void startVideoStream (LinphoneCallState targetState);
+	void startVideoStream (CallSession::State targetState);
 	void stopAudioStream ();
 	void stopTextStream ();
 	void stopVideoStream ();
 	void tryEarlyMediaForking (SalMediaDescription *md);
 	void updateFrozenPayloads (SalMediaDescription *result);
-	void updateStreams (SalMediaDescription *newMd, LinphoneCallState targetState);
+	void updateStreams (SalMediaDescription *newMd, CallSession::State targetState);
 	void updateStreamsDestinations (SalMediaDescription *oldMd, SalMediaDescription *newMd);
 
 	bool allStreamsAvpfEnabled () const;
@@ -222,11 +231,6 @@ private:
 	void updateLocalStats (LinphoneCallStats *stats, MediaStream *stream) const;
 	void updateRtpStats (LinphoneCallStats *stats, int streamIndex);
 
-	bool mediaReportEnabled (int statsType);
-	bool qualityReportingEnabled () const;
-	void updateReportingCallState ();
-	void updateReportingMediaInfo (int statsType);
-
 	void executeBackgroundTasks (bool oneSecondElapsed);
 	void reportBandwidth ();
 	void reportBandwidthForStream (MediaStream *ms, LinphoneStreamType type);
@@ -237,13 +241,13 @@ private:
 	LinphoneStatus pause ();
 	int restartInvite () override;
 	void setTerminated () override;
-	LinphoneStatus startAcceptUpdate (LinphoneCallState nextState, const std::string &stateInfo) override;
+	LinphoneStatus startAcceptUpdate (CallSession::State nextState, const std::string &stateInfo) override;
 	LinphoneStatus startUpdate (const std::string &subject = "") override;
 	void terminate () override;
 	void updateCurrentParams () const override;
 
 	void accept (const MediaSessionParams *params, bool wasRinging);
-	LinphoneStatus acceptUpdate (const CallSessionParams *csp, LinphoneCallState nextState, const std::string &stateInfo) override;
+	LinphoneStatus acceptUpdate (const CallSessionParams *csp, CallSession::State nextState, const std::string &stateInfo) override;
 
 	void refreshSockets ();
 	void reinviteToRecoverFromConnectionLoss () override;
@@ -334,4 +338,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _MEDIA_SESSION_P_H_
+#endif // ifndef _L_MEDIA_SESSION_P_H_

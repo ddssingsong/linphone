@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _REMOTE_CONFERENCE_H_
-#define _REMOTE_CONFERENCE_H_
+#ifndef _L_REMOTE_CONFERENCE_H_
+#define _L_REMOTE_CONFERENCE_H_
 
 #include "conference-listener.h"
 #include "conference.h"
@@ -35,7 +35,7 @@ class LINPHONE_PUBLIC RemoteConference : public Conference, public ConferenceLis
 
 public:
 	RemoteConference (const std::shared_ptr<Core> &core, const IdentityAddress &myAddress, CallSessionListener *listener);
-	virtual ~RemoteConference();
+	virtual ~RemoteConference ();
 
 	/* ConferenceInterface */
 	void addParticipant (const IdentityAddress &addr, const CallSessionParams *params, bool hasMedia) override;
@@ -62,4 +62,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _REMOTE_CONFERENCE_H_
+#endif // ifndef _L_REMOTE_CONFERENCE_H_

@@ -91,6 +91,7 @@ set(C_API_HEADER_FILES
 )
 
 set(ENUMS_HEADER_FILES
+	call-enums.h
 	chat-message-enums.h
 	chat-room-enums.h
 	event-log-enums.h
@@ -98,6 +99,8 @@ set(ENUMS_HEADER_FILES
 
 set(UTILS_HEADER_FILES
 	enum-generator.h
+	enum-mask.h
+	fs.h
 	general.h
 	magic-macros.h
 	traits.h

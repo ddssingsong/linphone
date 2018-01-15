@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CONFERENCE_INTERFACE_H_
-#define _CONFERENCE_INTERFACE_H_
+#ifndef _L_CONFERENCE_INTERFACE_H_
+#define _L_CONFERENCE_INTERFACE_H_
 
 #include <list>
 #include <memory>
@@ -37,10 +37,19 @@ class LINPHONE_PUBLIC ConferenceInterface {
 public:
 	virtual ~ConferenceInterface() = default;
 
-	virtual void addParticipant (const IdentityAddress &addr, const CallSessionParams *params, bool hasMedia) = 0;
-	virtual void addParticipants (const std::list<IdentityAddress> &addresses, const CallSessionParams *params, bool hasMedia) = 0;
+	virtual void addParticipant (
+		const IdentityAddress &participantAddress,
+		const CallSessionParams *params,
+		bool hasMedia
+	) = 0;
+	virtual void addParticipants (
+		const std::list<IdentityAddress> &addresses,
+		const CallSessionParams *params,
+		bool hasMedia
+	) = 0;
 	virtual bool canHandleParticipants () const = 0;
-	virtual std::shared_ptr<Participant> findParticipant (const IdentityAddress &addr) const = 0;
+	virtual bool canHandleCpim () const = 0;
+	virtual std::shared_ptr<Participant> findParticipant (const IdentityAddress &participantAddress) const = 0;
 	virtual const IdentityAddress &getConferenceAddress () const = 0;
 	virtual std::shared_ptr<Participant> getMe () const = 0;
 	virtual int getParticipantCount () const = 0;
@@ -56,4 +65,4 @@ public:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CONFERENCE_INTERFACE_H_
+#endif // ifndef _L_CONFERENCE_INTERFACE_H_

@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CHAT_MESSAGE_P_H_
-#define _CHAT_MESSAGE_P_H_
+#ifndef _L_CHAT_MESSAGE_P_H_
+#define _L_CHAT_MESSAGE_P_H_
 
 #include <belle-sip/types.h>
 
@@ -89,6 +89,8 @@ public:
 	std::string getSalCustomHeaderValue(const std::string& name);
 
 	void loadFileTransferUrlFromBodyToContent();
+
+	void setChatRoom (const std::shared_ptr<AbstractChatRoom> &chatRoom);
 
 	// -----------------------------------------------------------------------------
 	// Deprecated methods only used for C wrapper, to be removed some day...
@@ -169,4 +171,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CHAT_MESSAGE_P_H_
+#endif // ifndef _L_CHAT_MESSAGE_P_H_

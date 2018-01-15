@@ -17,9 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CORE_P_H_
-#define _CORE_P_H_
+#ifndef _L_CORE_P_H_
+#define _L_CORE_P_H_
 
+#include "chat/chat-room/abstract-chat-room.h"
 #include "core.h"
 #include "db/main-db.h"
 #include "object/object-p.h"
@@ -38,7 +39,7 @@ public:
 	void unregisterListener (CoreListener *listener);
 	void uninit ();
 
-	void notifyNetworkReachable (bool reachable);
+	void notifyNetworkReachable (bool sipNetworkReachable, bool mediaNetworkReachable);
 	void notifyRegistrationStateChanged (LinphoneProxyConfig *cfg, LinphoneRegistrationState state, const std::string &message);
 
 	int addCall (const std::shared_ptr<Call> &call);
@@ -58,7 +59,9 @@ public:
 
 	void insertChatRoom (const std::shared_ptr<AbstractChatRoom> &chatRoom);
 	void insertChatRoomWithDb (const std::shared_ptr<AbstractChatRoom> &chatRoom);
-	std::shared_ptr<AbstractChatRoom> createBasicChatRoom (const ChatRoomId &chatRoomId, bool isRtt);
+	std::shared_ptr<AbstractChatRoom> createBasicChatRoom (const ChatRoomId &chatRoomId, AbstractChatRoom::CapabilitiesMask capabilities);
+	std::shared_ptr<AbstractChatRoom> createClientGroupChatRoom (const std::string &subject, bool fallback = true);
+	void replaceChatRoom (const std::shared_ptr<AbstractChatRoom> &replacedChatRoom, const std::shared_ptr<AbstractChatRoom> &newChatRoom);
 
 	std::unique_ptr<MainDb> mainDb;
 
@@ -76,4 +79,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CORE_P_H_
+#endif // ifndef _L_CORE_P_H_

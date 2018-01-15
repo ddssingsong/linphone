@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CALL_SESSION_P_H_
-#define _CALL_SESSION_P_H_
+#ifndef _L_CALL_SESSION_P_H_
+#define _L_CALL_SESSION_P_H_
 
 #include "object/object-p.h"
 
@@ -36,8 +36,8 @@ public:
 	int computeDuration () const;
 	virtual void initializeParamsAccordingToIncomingCallParams ();
 	void notifyReferState ();
-	virtual void setState (LinphoneCallState newState, const std::string &message);
-	void setTransferState (LinphoneCallState newState);
+	virtual void setState (CallSession::State newState, const std::string &message);
+	void setTransferState (CallSession::State newState);
 	void startIncomingNotification ();
 	bool startPing ();
 	void setPingTime (int value) { pingTime = value; }
@@ -67,27 +67,30 @@ public:
 	void updatedByRemote ();
 	virtual void updating (bool isUpdate);
 
+	void setCallSessionListener (CallSessionListener *listener) { this->listener = listener; }
+
 protected:
 	void init ();
 
 	void accept (const CallSessionParams *params);
-	virtual LinphoneStatus acceptUpdate (const CallSessionParams *csp, LinphoneCallState nextState, const std::string &stateInfo);
+	virtual LinphoneStatus acceptUpdate (const CallSessionParams *csp, CallSession::State nextState, const std::string &stateInfo);
 	LinphoneStatus checkForAcceptation () const;
 	virtual void handleIncomingReceivedStateInIncomingNotification ();
 	virtual bool isReadyForInvite () const;
-	bool isUpdateAllowed (LinphoneCallState &nextState) const;
+	bool isUpdateAllowed (CallSession::State &nextState) const;
 	virtual int restartInvite ();
 	virtual void setReleased ();
 	virtual void setTerminated ();
-	virtual LinphoneStatus startAcceptUpdate (LinphoneCallState nextState, const std::string &stateInfo);
+	virtual LinphoneStatus startAcceptUpdate (CallSession::State nextState, const std::string &stateInfo);
 	virtual LinphoneStatus startUpdate (const std::string &subject);
 	virtual void terminate ();
 	virtual void updateCurrentParams () const;
 
+	void setBroken ();
 	void setContactOp ();
 
 	// CoreListener
-	void onNetworkReachable (bool reachable) override;
+	void onNetworkReachable (bool sipNetworkReachable, bool mediaNetworkReachable) override;
 	void onRegistrationStateChanged (LinphoneProxyConfig *cfg, LinphoneRegistrationState cstate, const std::string &message) override;
 
 private:
@@ -113,9 +116,9 @@ protected:
 
 	std::string subject;
 	LinphoneCallDir direction = LinphoneCallOutgoing;
-	LinphoneCallState state = LinphoneCallIdle;
-	LinphoneCallState prevState = LinphoneCallIdle;
-	LinphoneCallState transferState = LinphoneCallIdle;
+	CallSession::State state = CallSession::State::Idle;
+	CallSession::State prevState = CallSession::State::Idle;
+	CallSession::State transferState = CallSession::State::Idle;
 	LinphoneProxyConfig *destProxy = nullptr;
 	LinphoneErrorInfo *ei = nullptr;
 	LinphoneCallLog *log = nullptr;
@@ -144,4 +147,4 @@ private:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CALL_SESSION_P_H_
+#endif // ifndef _L_CALL_SESSION_P_H_

@@ -17,8 +17,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
  */
 
-#ifndef _CALL_SESSION_LISTENER_H_
-#define _CALL_SESSION_LISTENER_H_
+#ifndef _L_CALL_SESSION_LISTENER_H_
+#define _L_CALL_SESSION_LISTENER_H_
+
+#include "conference/session/call-session.h"
 
 // =============================================================================
 
@@ -37,11 +39,12 @@ public:
 	virtual bool onCallSessionAccepted (const std::shared_ptr<const CallSession> &session) { return false; }
 	virtual void onCallSessionConferenceStreamStarting (const std::shared_ptr<const CallSession> &session, bool mute) {}
 	virtual void onCallSessionConferenceStreamStopping (const std::shared_ptr<const CallSession> &session) {}
+	virtual void onCallSessionEarlyFailed (const std::shared_ptr<const CallSession> &session, LinphoneErrorInfo *ei) {}
 	virtual void onCallSessionSetReleased (const std::shared_ptr<const CallSession> &session) {}
 	virtual void onCallSessionSetTerminated (const std::shared_ptr<const CallSession> &session) {}
 	virtual void onCallSessionStartReferred (const std::shared_ptr<const CallSession> &session) {}
-	virtual void onCallSessionStateChanged (const std::shared_ptr<const CallSession> &session, LinphoneCallState state, const std::string &message) {}
-	virtual void onCallSessionTransferStateChanged (const std::shared_ptr<const CallSession> &session, LinphoneCallState state) {}
+	virtual void onCallSessionStateChanged (const std::shared_ptr<const CallSession> &session, CallSession::State state, const std::string &message) {}
+	virtual void onCallSessionTransferStateChanged (const std::shared_ptr<const CallSession> &session, CallSession::State state) {}
 	virtual void onCheckForAcceptation (const std::shared_ptr<const CallSession> &session) {}
 	virtual void onDtmfReceived (const std::shared_ptr<const CallSession> &session, char dtmf) {}
 	virtual void onIncomingCallSessionNotified (const std::shared_ptr<const CallSession> &session) {}
@@ -52,7 +55,10 @@ public:
 
 	virtual void onEncryptionChanged (const std::shared_ptr<const CallSession> &session, bool activated, const std::string &authToken) {}
 
+	virtual void onCallSessionStateChangedForReporting (const std::shared_ptr<const CallSession> &session) {}
+	virtual void onRtcpUpdateForReporting (const std::shared_ptr<const CallSession> &session, SalStreamType type) {}
 	virtual void onStatsUpdated (const std::shared_ptr<const CallSession> &session, const LinphoneCallStats *stats) {}
+	virtual void onUpdateMediaInfoForReporting (const std::shared_ptr<const CallSession> &session, int statsType) {}
 
 	virtual void onResetCurrentSession (const std::shared_ptr<const CallSession> &session) {}
 	virtual void onSetCurrentSession (const std::shared_ptr<const CallSession> &session) {}
@@ -73,4 +79,4 @@ public:
 
 LINPHONE_END_NAMESPACE
 
-#endif // ifndef _CALL_SESSION_LISTENER_H_
+#endif // ifndef _L_CALL_SESSION_LISTENER_H_

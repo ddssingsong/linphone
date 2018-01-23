@@ -270,7 +270,24 @@ s/linkPhoneNumberWithAccount()/linkAccount()/g; \
 s/zoomVideo(/zoom(/g; \
 s/mLc.setCpuCount(/\/\/mLc.setCpuCount(/g; \
 s/new XmlRpcRequestImpl(/xmlRpcSession.createRequest(/g; \
-s/new XmlRpcSessionImpl(LinphoneManager.getLcIfManagerNotDestroyedOrNull(), /LinphoneManager.getLcIfManagerNotDestroyedOrNull().createXmlRpcSession(/g" {} \;
+s/new XmlRpcSessionImpl(LinphoneManager.getLcIfManagerNotDestroyedOrNull(), /LinphoneManager.getLcIfManagerNotDestroyedOrNull().createXmlRpcSession(/g; \
+s/Address\.TransportType/TransportType/g; \
+s/\(CallLog\.\)\?CallStatus\([^[:alnum:]_]\)/Call.Status\2/g; \
+s/CallStats\.AddressFamily/AddressFamily/g; \
+s/CallStats\.StreamType/StreamType/g; \
+s/Core\.AuthMethod/AuthMethod/g; \
+s/Core\.ConfiguringState/ConfiguringState/g; \
+s/Core\.EcCalibratorStatus/EcCalibratorStatus/g; \
+s/Core\.GlobalState/GlobalState/g; \
+s/Core\.LimeState/LimeState/g; \
+s/Core\.LogCollectionState/LogCollectionState/g; \
+s/Core\.MediaEncryption/MediaEncryption/g; \
+s/Core\.RegistrationState/RegistrationState/g; \
+s/Core\.VersionUpdateCheckResult/VersionUpdateCheckResult/g; \
+s/Event\.PublishState/PublishState/g; \
+s/Friend\.SubscribePolicy/SubscribePolicy/g; \
+s/XmlRpcRequest\.ArgType/XmlRpcArgType/g; \
+s/XmlRpcRequest\.Status/XmlRpcStatus/g;" {} \;
 
 # TODO
 #Tunnel, TunnelConfig

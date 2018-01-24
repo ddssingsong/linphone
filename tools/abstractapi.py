@@ -110,11 +110,13 @@ class Object(object):
 	def __lt__(self, other):
 		return self.name < other.name
 	
-	def find_first_ancestor_by_type(self, *types):
+	def find_first_ancestor_by_type(self, *types, priorAncestor=False):
+		current = self
 		ancestor = self.parent
 		while ancestor is not None and type(ancestor) not in types:
+			current = ancestor
 			ancestor = ancestor.parent
-		return ancestor
+		return ancestor if not priorAncestor else current
 
 
 class Type(Object):

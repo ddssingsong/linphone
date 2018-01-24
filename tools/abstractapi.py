@@ -942,12 +942,15 @@ class Translator:
 		except KeyError:
 			raise ValueError("Invalid language code: '{0}'".format(langCode))
 
-	def _compute_namespace_name(self, namespace, type_):
+	def _get_object_name(self, obj):
+		return obj.desc.name if isinstance(obj, (EnumType, ClassType)) else obj.name
+
+	def _compute_namespace_name(self, namespace, obj):
 		if namespace is not None:
 			return namespace.name if namespace is not GlobalNs else None
 		else:
-			method = type_.find_first_ancestor_by_type(Method, Class, Namespace, Interface)
-			return metaname.Name.find_common_parent(type_.desc.name, method.name)
+			namespace = obj.find_first_ancestor_by_type(Enum, Class, Namespace, Interface)
+			return metaname.Name.find_common_parent(self._get_object_name(obj), namespace.name)
 
 
 class CLikeLangTranslator(Translator):
@@ -1145,9 +1148,9 @@ class CppLangTranslator(CLikeLangTranslator):
 	def prepend_std(string, prepend):
 		return 'std::' + string if prepend else string
 
-	def _compute_namespace_name(self, namespace, type_):
-		nsName = Translator._compute_namespace_name(self, namespace, type_)
-		if type_.desc.name.to_c() in self.ambigousTypes:
+	def _compute_namespace_name(self, namespace, obj):
+		nsName = Translator._compute_namespace_name(self, namespace, obj)
+		if self._get_object_name(obj).to_c() in self.ambigousTypes:
 			nsName = None
 		return nsName
 

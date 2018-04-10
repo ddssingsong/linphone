@@ -101,6 +101,14 @@ void ClientGroupChatRoomPrivate::setCallSessionListener (CallSessionListener *li
 	}
 }
 
+unsigned int ClientGroupChatRoomPrivate::getLastNotifyId () const {
+	L_Q_T(RemoteConference, qConference);
+
+	return qConference->getPrivate()->eventHandler->getLastNotify();
+}
+
+// -----------------------------------------------------------------------------
+
 void ClientGroupChatRoomPrivate::confirmJoining (SalCallOp *op) {
 	L_Q();
 	L_Q_T(RemoteConference, qConference);
